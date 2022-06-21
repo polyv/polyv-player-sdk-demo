@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconFile</key>
+	<string>logo.icns</string>
+	<key>CFBundleGetInfoString</key>
+	<string>video player</string>
+	<key>CFBundleExecutable</key>
+	<string>plv-player-sdk-demo</string>
+	<key>CFBundleIdentifier</key>
+	<string>net.polyv.PC-plv-player-sdk-demo</string>
+	<key>CFBundleName</key>
+	<string>plv-player-sdk-demo</string>
+	<key>CFBundleDisplayName</key>
+	<string>plv-player-sdk-demo</string>
+	<key>LSHasLocalizedDisplayName</key>
+	<true/>
+
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>PLVURLHandler</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>plv-player-sdk-demo</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.14.0</string>
+	<key>NSPrincipalClass</key>
+ 	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>LSAppNapIsDisabled</key>
+	<true/>
+</dict>
+</plist>

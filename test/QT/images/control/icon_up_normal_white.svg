@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>btn-上拉normal</title>
+    <desc>Created with Sketch.</desc>
+    <g id="组件" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.4">
+        <g id="编组-26">
+            <g id="btn-下拉" transform="translate(20.000000, 20.000000) scale(1, -1) translate(-20.000000, -20.000000) ">
+                <g>
+                    <rect id="RectanglePath" fill="#FFFFFF" opacity="0" x="0" y="-2.27373675e-13" width="40" height="40"></rect>
+                    <polyline id="矩形" stroke="#09122F" stroke-linecap="square" transform="translate(20.000000, 17.000000) rotate(-315.000000) translate(-20.000000, -17.000000) " points="24 13 24 21 16 21"></polyline>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

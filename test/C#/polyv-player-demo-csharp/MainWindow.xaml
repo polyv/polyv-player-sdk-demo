@@ -1,0 +1,81 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:polyv_player_demo_csharp"
+        xmlns:WinFormHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+        xmlns:WinFormControls="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:System="clr-namespace:System;assembly=mscorlib" x:Name="___无名称_" x:Class="polyv_player_demo_csharp.MainWindow"
+        mc:Ignorable="d"
+        Title="C#点播DEMO" Height="700" Width="1158"
+        Loaded="WindowLoaded"
+        Closing="WindowClosing" MinWidth="1158" MinHeight="700">
+    <Grid Grid.IsSharedSizeScope="True" Margin="0,0,2,0">
+        <Viewbox x:Name="viewbox1"   UseLayoutRounding="False" Stretch="Fill" Margin="0,0,0,178">
+            <WindowsFormsHost >
+                <WinFormControls:PictureBox  x:Name="playWindow" BackColor="Gray" BorderStyle="FixedSingle"/>
+            </WindowsFormsHost>
+        </Viewbox>
+        <Grid Height="177" Margin="26,0,33,0" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="72"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Label Content="userid" HorizontalAlignment="Left" Margin="21,13,0,0" VerticalAlignment="Top" Height="25" Width="45"/>
+            <TextBox x:Name="userIdTextBox" HorizontalAlignment="Left" Height="23" Margin="71,14,0,0" VerticalAlignment="Top" Width="81" AutomationProperties.HelpText="userId" Text=""/>
+            <Label Content="secretkey" HorizontalAlignment="Left" Margin="162,13,0,0" VerticalAlignment="Top" Height="25" Width="64"/>
+            <TextBox x:Name="secretKeyTextBox" HorizontalAlignment="Left" Height="23" Margin="230,14,0,0" VerticalAlignment="Top" Width="77" RenderTransformOrigin="0.45,-0.13" AutomationProperties.HelpText="secretKey" Text=""/>
+            <Label Content="readtoken" HorizontalAlignment="Left" Margin="315,13,0,0" VerticalAlignment="Top" Height="25" Width="69"/>
+            <TextBox x:Name="readTokenTextBox" HorizontalAlignment="Left" Height="23" Margin="387,14,0,0" VerticalAlignment="Top" Width="126" AutomationProperties.HelpText="readToken" Text=""/>
+            <Label Content="vid" HorizontalAlignment="Left" Margin="526,13,0,0" VerticalAlignment="Top" Height="25" Width="27"/>
+            <TextBox x:Name="vidTextBox" HorizontalAlignment="Left" Height="23" Margin="558,14,0,0" VerticalAlignment="Top" Width="143" Text="" IsReadOnly="True"/>
+            <ComboBox x:Name="vidListComboBox" HorizontalAlignment="Left" Height="23" Margin="716,14,0,0" VerticalAlignment="Top" Width="260" 
+                      DisplayMemberPath="Title" SelectedValuePath="Vid" SelectionChanged="OnVideoChanged"/>
+            <Button x:Name="getVdeoButton" Content="获取视频" HorizontalAlignment="Left" Height="24" Margin="994,14,0,0" VerticalAlignment="Top" Width="70" Click="OnGetVideoList" RenderTransformOrigin="0.686,-1.333"/>
+
+            <Slider x:Name="playSlider" HorizontalAlignment="Left" Margin="21,47,0,0" VerticalAlignment="Top" Width="775" Height="22" GotMouseCapture="OnPlaySeekStart" LostMouseCapture="OnPlaySeekStop" Maximum="100"/>
+            <Label  x:Name="playTimeLabel" HorizontalAlignment="Left" Margin="815,44,0,0" VerticalAlignment="Top" Width="150" Height="28"/>
+            <Label  x:Name="playStatusLabel" HorizontalAlignment="Left" Margin="965,44,0,0" VerticalAlignment="Top" Width="100" Height="28"/>
+            <Button x:Name="playStartButton" Content="播放" HorizontalAlignment="Left" Margin="21,12,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnPlayStart" Grid.Row="1"/>
+            <Button x:Name="playPauseButton" Content="暂停" HorizontalAlignment="Left" Margin="101,12,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnPlayPause" Grid.Row="1" IsEnabled="False"/>
+            <Button x:Name="playResumeButton" Content="继续" HorizontalAlignment="Left" Margin="181,12,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnPlayResume" Grid.Row="1" IsEnabled="False"/>
+            <Button x:Name="playStopButton" Content="停止" HorizontalAlignment="Left" Margin="261,12,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnPlayStop" IsEnabled="False" Grid.Row="1"/>
+            <CheckBox Content="本地播放" x:Name="localPlayCheck" HorizontalAlignment="Left" Margin="371,16,0,0" VerticalAlignment="Top" Grid.Row="1"/>
+            <CheckBox Content="预加载" x:Name="preloadPlayCheck" HorizontalAlignment="Left" Margin="453,16,0,0" VerticalAlignment="Top" Grid.Row="1"/>
+            <CheckBox Content="连续播放" x:Name="continuePlayCheck" HorizontalAlignment="Left" Margin="523,16,0,0" VerticalAlignment="Top" Grid.Row="1"/>
+            <Label Content="音量" HorizontalAlignment="Left" Margin="629,10,0,0" VerticalAlignment="Top" Grid.Row="1" Height="25" Width="34"/>
+            <Slider x:Name="volumeSlider" HorizontalAlignment="Left" Margin="669,12,0,0" VerticalAlignment="Top" Height="20" Width="81" ValueChanged="OnVolumeChanged" Maximum="200" Value="100" Grid.Row="1"/>
+            <Label x:Name="volumeLabel" Content="" HorizontalAlignment="Left" Height="25" Margin="755,10,0,0" Grid.Row="1" VerticalAlignment="Top" Width="41"/>
+            <Label Content="速度" HorizontalAlignment="Left" Margin="803,10,0,0" VerticalAlignment="Top" Grid.Row="1" Height="25" Width="34"/>
+            <ComboBox x:Name="playSpeedComboBox" HorizontalAlignment="Left" Margin="843,12,0,0" VerticalAlignment="Top" Width="81" SelectionChanged="OnPlaySpeedChanged" Grid.Row="1" Height="21">
+                <ComboBoxItem Content="0.5" />
+                <ComboBoxItem Content="1.0" IsSelected="True" />
+                <ComboBoxItem Content="1.5" />
+                <ComboBoxItem Content="2.0" />
+            </ComboBox>
+            <Label Content="清晰度" HorizontalAlignment="Left" Margin="929,10,0,0" VerticalAlignment="Top" Grid.Row="1" Height="25" Width="46"/>
+            <ComboBox x:Name="playRateComboBox" HorizontalAlignment="Left" Margin="981,12,0,0" VerticalAlignment="Top" Width="81" RenderTransformOrigin="-0.607,0" SelectionChanged="OnPlayRateChanged" Grid.Row="1" Height="21">
+                <ComboBoxItem Content="自动" IsSelected="True" />
+                <ComboBoxItem Content="流畅" />
+                <ComboBoxItem Content="高清" />
+                <ComboBoxItem Content="超清" />
+            </ComboBox>
+
+            <Button x:Name="downloadStartButton" Content="下载" HorizontalAlignment="Left" Margin="21,54,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnDownloadStart" Grid.Row="1"/>
+            <Button x:Name="downloadPauseButton" Content="暂停" HorizontalAlignment="Left" Margin="101,54,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnDownloadPause" Grid.Row="1" IsEnabled="False"/>
+            <Button x:Name="downloadStopButton" Content="停止" HorizontalAlignment="Left" Margin="181,54,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnDownloadStop" Grid.Row="1" IsEnabled="False"/>
+            <Button x:Name="downloadDeleteButton" Content="删除" HorizontalAlignment="Left" Margin="261,54,0,0" VerticalAlignment="Top" Width="74" Height="20" Click="OnDownloadDelete" Grid.Row="1" IsEnabled="False"/>
+            <Label Content="清晰度" HorizontalAlignment="Left" Margin="370,51,0,0" VerticalAlignment="Top" Grid.Row="1" Height="25" Width="46"/>
+            <ComboBox x:Name="downloadRateComboBox" HorizontalAlignment="Left" Margin="422,53,0,0" VerticalAlignment="Top" Width="81" RenderTransformOrigin="-0.607,0" Grid.Row="1" Height="21">
+                <ComboBoxItem Content="流畅" IsSelected="True"/>
+                <ComboBoxItem Content="高清" />
+                <ComboBoxItem Content="超清" />
+            </ComboBox>
+            <Label Content="下载状态" x:Name="downloadStatusLabel" HorizontalAlignment="Left" Margin="545,51,0,0" VerticalAlignment="Top" Width="222" Grid.Row="1" Height="25"/>
+            <ProgressBar x:Name="downloadProgressBar" HorizontalAlignment="Left" Height="20" Margin="670,54,0,0" Grid.Row="1" VerticalAlignment="Top" Width="97" Visibility="Collapsed"/>
+
+            <Button x:Name="HiddenButton" Content="隐藏" HorizontalAlignment="Left" Height="17" Margin="942,86,0,0" Grid.Row="1" VerticalAlignment="Top" Width="85" Click="OnPlayControlHide"/>
+        </Grid>
+    </Grid>
+</Window>

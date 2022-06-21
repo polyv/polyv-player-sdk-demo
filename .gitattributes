@@ -1,0 +1,21 @@
+* text=auto
+*.sln             text eol=crlf
+*.vcproj          text eol=crlf
+*.vcxproj         text eol=crlf
+*.vcxproj         text eol=crlf
+*.vcxproj.filters text eol=crlf
+cmake/ALL_BUILD.vcxproj.user.in text eol=crlf
+*.svg			  text eol=lf
+*.html			  text eol=lf
+*.js			  text eol=lf
+*.css			  text eol=lf
+thirdparth/lib/x64/*.dll filter=lfs diff=lfs merge=lfs -text
+thirdparty/lib/x64/*.dll filter=lfs diff=lfs merge=lfs -text
+thirdparty/lib/x64/*.lib filter=lfs diff=lfs merge=lfs -text
+thirdparty/lib/x86/*.dll filter=lfs diff=lfs merge=lfs -text
+thirdparty/lib/x86/*.lib filter=lfs diff=lfs merge=lfs -text
+plv-player-sdk/mac/lib/*.dylib filter=lfs diff=lfs merge=lfs -text
+plv-player-sdk/windows/lib/x86/*.dll filter=lfs diff=lfs merge=lfs -text
+plv-player-sdk/windows/lib/x86/*.lib filter=lfs diff=lfs merge=lfs -text
+plv-player-sdk/windows/lib/x64/*.dll filter=lfs diff=lfs merge=lfs -text
+plv-player-sdk/windows/lib/x64/*.lib filter=lfs diff=lfs merge=lfs -text

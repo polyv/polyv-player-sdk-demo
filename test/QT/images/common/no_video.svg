@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128px" height="129px" viewBox="0 0 128 129" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 63.1 (92452) - https://sketch.com -->
+    <title>暂无视频</title>
+    <desc>Created with Sketch.</desc>
+    <g id="页面-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="图标状态备份" transform="translate(-294.000000, -62.000000)">
+            <g id="编组-17" transform="translate(294.000000, 62.000000)">
+                <g id="编组-7">
+                    <g id="编组-4备份">
+                        <g id="编组-49">
+                            <g id="编组-55" opacity="0" fill="#D8D8D8">
+                                <rect id="矩形" opacity="0.200000003" x="0" y="0" width="128" height="128"></rect>
+                                <rect id="矩形" opacity="0.200000003" x="16" y="16" width="96" height="96"></rect>
+                            </g>
+                            <path d="M35,19 L89.6279514,19 L89.6279514,19 L90.7552133,19.7984458 C90.8028432,19.8321823 90.8497289,19.8669573 90.8958369,19.9027457 L105,30.8502358 L105,30.8502358 L105,103 C105,105.209139 103.209139,107 101,107 L35,107 C32.790861,107 31,105.209139 31,103 L31,23 C31,20.790861 32.790861,19 35,19 Z" id="矩形" stroke="#B0D2FF" stroke-width="2" fill="#DBEBFF"></path>
+                            <path d="M22,35 L84,35 C86.209139,35 88,36.790861 88,39 L88,106 C88,108.209139 86.209139,110 84,110 L22,110 C19.790861,110 18,108.209139 18,106 L18,39 C18,36.790861 19.790861,35 22,35 Z" id="矩形备份-2" stroke="#B0D2FF" stroke-width="2" fill="#FFFFFF"></path>
+                            <path d="M22,35 L84,35 C86.209139,35 88,36.790861 88,39 L88,51 L88,51 L18,51 L18,39 C18,36.790861 19.790861,35 22,35 Z" id="矩形备份-2" stroke="#B0D2FF" stroke-width="2" fill="#FFFFFF"></path>
+                            <rect id="矩形" fill="#B0D2FF" x="44" y="62" width="34" height="3" rx="1.5"></rect>
+                            <rect id="矩形" fill="#B0D2FF" x="44" y="71" width="34" height="3" rx="1.5"></rect>
+                            <rect id="矩形" fill="#B0D2FF" x="26" y="61" width="12" height="13" rx="2"></rect>
+                            <path d="M92,21.0806248 L92,27 C92,27.8284271 92.3357864,28.5784271 92.8786797,29.1213203 C93.4215729,29.6642136 94.1715729,30 95,30 L103.149219,30 L92,21.0806248 Z" id="路径-3" stroke="#B0D2FF" stroke-width="2" fill="#FFFFFF"></path>
+                            <circle id="椭圆形" fill="#B0D2FF" cx="30" cy="43" r="4"></circle>
+                            <circle id="椭圆形" fill="#B0D2FF" cx="44" cy="43" r="4"></circle>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

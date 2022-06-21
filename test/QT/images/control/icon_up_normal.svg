@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="40px" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 61.2 (89653) - https://sketch.com -->
+    <title>ic_Retract_normal</title>
+    <desc>Created with Sketch.</desc>
+    <g id="11.切图汇总" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" opacity="0.600000024" stroke-linecap="square">
+        <g id="编组-24备份-2" stroke="#FFFFFF">
+            <g id="编组-29">
+                <g id="btn-下拉备份" transform="translate(14.500000, 23.000000) scale(1, -1) translate(-14.500000, -23.000000) translate(3.000000, 17.000000)">
+                    <g id="btn-下拉">
+                        <g id="矩形">
+                            <polyline transform="translate(17.000000, 6.000000) rotate(-315.000000) translate(-17.000000, -6.000000) " points="21 2 21 10 13 10"></polyline>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

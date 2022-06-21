@@ -1,0 +1,1106 @@
+/* Intentionnally left blank */
+/* Themes are created using Qt CSS, you can visit */
+/* http://doc.qt.io/qt-5/stylesheet-reference.html and */
+/* http://doc.qt.io/qt-5/stylesheet-examples.html for examples. */
+
+/* You can ship images using relative paths in qss. */
+/* a template. border: 1px solid #D9DCE6;*/
+
+/******************************************/
+QWidget:focus{
+	outline:none;
+}
+QWidget#line{
+	background-color:#D9DCE6;
+}
+QWidget#separator{
+	background-color:#D9DCE6;
+}
+QWidget[WidgetStyle="line"]{
+	background-color:#D9DCE6;
+}
+QWidget[WidgetStyle="separator"]{
+	background-color:#D9DCE6;
+}
+QWidget[WidgetStyle="white"]{
+	background: white;
+}
+QWidget[WidgetStyle="black"]{
+	background: black;
+}
+
+QRadioButton {
+    font-size: 14px;
+    color:#668196;
+	background-color: white; /* veryDark */
+}
+QRadioButton:disabled  {
+    color: rgba(158, 158, 158, 90%);
+}
+QRadioButton:focus {
+    outline: none;
+}
+
+/******************************************/
+QStackedWidget{
+	border:none;
+	background: transparent;
+}
+
+/******************************************/
+QLabel{
+	color: #668196;
+	font: normal 14px ;
+}
+QLabel[LabelStyle="red"]{
+	color:red;
+	font:normal 14px ;
+}
+QLabel[LabelStyle="white"]{
+	color:white;
+	font:normal 14px ;
+}
+QLabel[LabelStyle="black"]{
+	color:black;
+	font:normal 14px ;
+}
+QLabel[LabelStyle="blue"]{
+	color:#4B90E2;
+	font:normal 14px ;
+}
+
+
+/******************************************/
+QDialog {
+  	background-color:#F6F8FF;
+	border: 1px solid #DFE2EB;
+}
+
+/******************************************/
+QPushButton {
+    font:normal 14px ;
+    color:#333333; /* veryLight */
+    background:transparent;
+    padding:2px;
+    border:none;
+    border-radius:2px;
+}
+QPushButton:disabled {
+	color:#9E9E9E;
+	border:none;
+	background: #E9ECEE;
+}
+QPushButton::menu-indicator {
+    background:transparent;
+}
+
+QPushButton[ButtonStyle="normal"]{
+	font:normal 14px ;
+	color: #668196;
+	border-radius: 2px;
+	background: #FFFFFF;
+	border: 1px solid #DCDFE6;
+}
+QPushButton[ButtonStyle="normal"]:hover{
+	background: #E9ECEE;
+}
+QPushButton[ButtonStyle="normal"]:pressed{
+	background: #D9DEE0;
+}
+
+QPushButton[ButtonStyle="blue"]{
+	color:#FAFAFA;
+	background:rgba(10,141,255,1);
+	border-radius:2px ;
+}
+QPushButton[ButtonStyle="blue"]:hover{
+	background:rgba(10,141,255,0.8);
+}
+QPushButton[ButtonStyle="blue"]:pressed{
+	background:rgba(10,141,255,0.9);
+}
+
+QPushButton[ButtonStyle="red"]{
+	color:#FAFAFA;
+	border-radius:2px;
+	text-align:center;
+	background:#F44336;
+}
+QPushButton[ButtonStyle="red"]:hover{
+	background: #FF5252;
+}
+QPushButton[ButtonStyle="red"]:pressed{
+	background: #E53935;
+}
+
+/******************************************/
+QSpinBox{
+	font:normal 14px;
+    color:#668196;
+	background-color: white; /* veryDark */
+}
+
+/******************************************/
+QComboBox {
+    font:normal 14px ;
+    color:#668196;
+    border-radius: 2px;
+    padding: 2px;
+    padding-left: 4px;
+    border: 1px solid #CFD8DC;
+    combobox-popup: 0;
+	background-color: white; /* veryDark */
+}
+QComboBox:hover{
+    border: 1px solid #BCDFFB;
+}
+QComboBox:focus{
+    border: 1px solid #BCDFFB;
+}
+QComboBox::drop-down {
+    width:24px;
+    height:24px;
+    border:none;
+    subcontrol-origin:padding;
+    subcontrol-position: right center;
+    padding-right:6px;
+}
+QComboBox:on {
+    background-color: white;
+}
+QComboBox:disabled{
+    color:#757575;
+}
+QComboBox::drop-down:editable {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+QComboBox::down-arrow:editable {
+    qproperty-alignment: AlignTop;
+    width: 100%;
+}
+QComboBox::down-arrow:!on {
+    width:40px;
+    height:40px;
+    image: url(:res/images/control/icon_down_normal_white.svg);
+}
+QComboBox::down-arrow:!on:hover {
+    image: url(:res/images/control/icon_down_active.svg);
+}
+QComboBox::down-arrow:!on:pressed {
+    image: url(:res/images/control/icon_down_active.svg);
+}
+QComboBox::down-arrow:!on:disabled {
+    image: url(:res/images/control/icon_down_normal_white.svg);
+}
+QComboBox::down-arrow:on {
+    width:40px;
+    height:40px;
+    image: url(:res/images/control/icon_up_normal_white.svg);
+}
+QComboBox::down-arrow:on:hover {
+    image: url(:res/images/control/icon_up_active.svg);
+}
+QComboBox::down-arrow:on:pressed {
+    image: url(:res/images/control/icon_up_active.svg);
+}
+QComboBox::down-arrow:on:disabled {
+    image: url(:res/images/control/icon_up_normal_white.svg);
+}
+
+/******************************************/
+QLineEdit, QTextEdit {
+    background-color: white; /* veryDark */
+    border: 1px solid #CFD8DC;
+	font:normal 14px;
+	color: #9E9E9E;
+    padding-left: 4px;
+}
+QLineEdit:hover,QTextEdit:hover {
+	border-radius: 2px;
+	border: 1px solid #2196F3;
+}
+
+/******************************************/
+QListWidget {
+	font:normal 12px ;
+    show-decoration-selected: 1; /* make the selection span the entire width of the view */ 
+}
+QListWidget::item{
+	background:white;
+	color:#546e7a;
+}
+QListWidget::item:selected {
+	background:#e3f2fd;
+}
+
+/******************************************/
+::corner {
+    background-color: rgb(255,255,255); /* dark */
+    border: none;
+}
+
+QScrollBar:vertical {
+    background-color:#f1f1f1;
+	width: 14px;
+}
+
+QScrollBar::handle:vertical {
+    background-color:#c1c1c1;
+    min-height: 20px;
+    margin: 2px;
+    border-radius:5px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    border: none;
+    background: none;
+}
+
+QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical, QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    border: none;
+    background: none;
+    color: none;
+}
+
+QScrollBar:horizontal {
+    background-color:#f1f1f1;
+    height: 14px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color:#c1c1c1;
+    min-width: 20px;
+    margin: 2px;
+    border-radius: 5px;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    border: none;
+    background: none;
+}
+
+QScrollBar::left-arrow:horizontal, QScrollBar::right-arrow:horizontal, QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    border: none;
+    background: none;
+    color: none;
+}
+
+/******************************************/
+QSlider::handle:hover {
+    background-color:#e3f2fd; /* veryLight */
+}
+QSlider::handle:disabled {
+    background-color: white; /* light */
+}
+QSlider::sub-page {
+    background-color: rgb(42,130,218); /* blue */
+    border-radius: 2px;
+}
+/* horizontal */
+QSlider::groove:horizontal {
+  background: rgba(255, 255, 255, 0.3);
+  height: 4px;
+  border: none;
+  /*border-radius: 2px;*/
+}
+QSlider::sub-page:horizontal{
+    background-color:#1D60FF; 
+    /*border-radius: 2px;*/
+}
+QSlider::handle:horizontal {
+    background:transparent;
+	border-image:url(:res/images/control/slider_handle.png);
+    height: 14px;
+    width: 14px;
+    margin-top: -5px;
+	margin-bottom: -5px;  /*handle is placed by default on the contents rect of the groove. Expand outside the groove */
+}
+QSlider::handle:horizontal:hover{
+    background-color:transparent;
+}
+QSlider::handle:horizontal:pressed {
+    background-color:transparent;
+}
+/* vertical */
+QSlider::groove:vertical {
+    background: rgba(255, 255, 255, 0.3);
+    width: 4px;
+    border: none;
+    border-radius: 2px;
+}
+QSlider::add-page:vertical{
+    background-color:#1D60FF; 
+    border-radius: 2px;
+}
+QSlider::handle:vertical {
+    background:transparent;
+    border-image:url(:res/images/control/slider_handle.png);
+    width: 14px;
+    height: 14px;
+    margin-left: -5px;
+	margin-right: -5px;  /*handle is placed by default on the contents rect of the groove. Expand outside the groove */
+}
+QSlider::handle:vertical:hover{
+    background-color:transparent;
+}
+QSlider::handle:vertical:pressed {
+    background-color:transparent;
+}
+
+/******************************************/
+QMenu {
+	font:normal 14px ;
+	/*border:1px solid rgba(217,220,230,1);*/
+	background:white;
+}
+QMenu::item {
+	color:#668196;
+    background-color: transparent;
+	padding-left:20px;
+    padding-right:20px;
+    padding-top:8px;
+    padding-bottom:8px;
+}
+QMenu::item:selected { 
+    color:#0A8DFF;
+    background:#F6F8FB;
+}
+QMenu::item:disabled {
+	color:#bdbdbd;
+	background: transparent;
+}
+QMenu::separator {
+    height: 1px;
+    background: #eceff1;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+/******************************************/
+QCheckBox{
+	font:normal 14px ;
+	color: #668196;
+	background-color: white; /* veryDark */
+}
+QCheckBox:disabled {
+	color:#bdbdbd;
+}
+QCheckBox:focus {
+    outline: none;
+}
+
+/******************************************/
+QProgressBar {
+	background: #EFEFEF;
+    height:4px;
+	border-radius: 2px;
+}
+QProgressBar::chunk {  
+	background: #0A8DFF;
+	border-radius: 2px;
+}
+/*
+QProgressBar::corner {
+    background-color: rgb(255,255,255);
+    border: none;
+}*/
+
+/******************************************/
+TitleBar QWidget#titleBg{
+	background-color:#0F75FF;
+}
+TitleBar QLabel#titleLabel{
+	color:#ffffff;
+}
+TitleBar QLabel#logoLabel{
+	image: url(:res/images/title/logo.svg);
+}
+TitleBar QPushButton#minimize{
+	image: url(:res/images/title/minimize_normal.svg);
+}
+TitleBar QPushButton#minimize:hover{
+	image: url(:res/images/title/minimize_active.svg);
+}
+TitleBar QPushButton#minimize:pressed{
+   image: url(:res/images/title/minimize_active.svg);
+}
+TitleBar QPushButton#maximize{
+	image: url(:res/images/title/maximize_normal.svg);
+}
+TitleBar QPushButton#maximize:hover{
+	image: url(:res/images/title/maximize_active.svg);
+}
+TitleBar QPushButton#maximize:pressed{
+	image: url(:res/images/title/maximize_active.svg);
+}
+TitleBar QPushButton#maximize:checked{
+	image: url(:res/images/title/restore_normal.svg);
+}
+TitleBar QPushButton#maximize:checked:hover{
+	image: url(:res/images/title/restore_active.svg);
+}
+TitleBar QPushButton#maximize:checked:pressed{
+	image: url(:res/images/title/restore_active.svg);
+}
+TitleBar QPushButton#close{
+	image: url(:res/images/title/close_normal.svg);
+}
+TitleBar QPushButton#close:hover{
+	image: url(:res/images/title/close_active.svg);
+}
+TitleBar QPushButton#close:pressed{
+	image: url(:res/images/title/close_active.svg);
+}
+
+/******************************************/
+TipsWidget{
+    background:transparent;
+}
+TipsWidget QWidget#toastWidget{
+	background: rgba(0,0,0,0.6);
+    border-radius:2px;
+}
+TipsWidget QWidget#toastIcon{
+	background:transparent;
+    image:url(:res/images/tips/icon_toast.svg);
+}
+TipsWidget QWidget#toastLabel{
+	color: #ffffff;
+	font: normal 14px ;
+}
+TipsWidget QWidget#tipWidget0,
+TipsWidget QWidget#tipWidget1{
+	background: #FDEBCD;
+    border-radius:2px;
+}
+TipsWidget QWidget#tipWidget2{
+    background:#D3EAFD;
+    border-radius:2px;
+}
+TipsWidget QWidget#tipWidget3,
+TipsWidget QWidget#tipWidget4{
+    background:#FFDDD3;
+    border-radius:2px;
+}
+TipsWidget QLabel#tipsIcon[level="0"]{
+    background:transparent;
+}
+TipsWidget QLabel#tipsIcon[level="1"]{
+	background:transparent;
+    image:url(:res/images/tips/icon_info.svg);
+}
+TipsWidget QLabel#tipsIcon[level="2"]{
+	background:transparent;
+    image:url(:res/images/tips/icon_success.svg);
+}
+TipsWidget QLabel#tipsIcon[level="3"],
+TipsWidget QLabel#tipsIcon[level="4"]{
+	background:transparent;
+    image:url(:res/images/tips/icon_error.svg);
+}
+TipsWidget QLabel#tipsLabel[level="0"],
+TipsWidget QLabel#tipsLabel[level="1"]{
+	color: #F89B08;
+	font: normal 14px ;
+}
+TipsWidget QLabel#tipsLabel[level="2"]{
+    color: #2196F3;
+    font: normal 14px ;
+}
+TipsWidget QLabel#tipsLabel[level="3"],
+TipsWidget QLabel#tipsLabel[level="4"]{
+    color: #FF5722;
+    font: normal 14px ;
+}
+TipsWidget QPushButton#closeButton{
+	background:transparent;
+    image: url(:res/images/tips/icon_close_normal.svg);
+}
+TipsWidget QPushButton#closeButton:hover{
+    image: url(:res/images/tips/icon_close_active.svg);
+}
+TipsWidget QPushButton#closeButton:pressed{
+    image: url(:res/images/tips/icon_close_active.svg);
+}
+
+/******************************************/
+MainWindow QWidget#content{
+	background: #ffffff;
+}
+MainWindow QWidget#mainPage{
+	border:1px solid #EDF1F7;
+}
+MainWindow QWidget#tabBar{
+	background: #EDF1F7;
+	border-right:1px solid #EDF1F7;
+}
+MainWindow QWidget#tabWidget{
+	border-bottom:1px solid #EDF1F7;
+}
+MainWindow QPushButton#downloadingButton,
+MainWindow QPushButton#localButton{
+	padding-left:6px;
+	padding-right:6px;
+	color:#668196;
+	background: transparent;
+	border-bottom:2px solid #ffffff;
+}
+MainWindow QPushButton#downloadingButton:hover,
+MainWindow QPushButton#localButton:hover{
+	color:rgba(10,141,255,0.8);
+}
+MainWindow QPushButton#downloadingButton:pressed,
+MainWindow QPushButton#localButton:pressed{
+	color:rgba(10,141,255,0.9);
+}
+MainWindow QPushButton#downloadingButton:checked,
+MainWindow QPushButton#localButton:checked{
+	color:rgba(10,141,255,1);
+	border-bottom:2px solid #368DFF;
+}
+MainWindow QPushButton#downloadingButton:checked:hover,
+MainWindow QPushButton#localButton:checked:hover{
+	color:rgba(10,141,255,0.8);
+}
+MainWindow QPushButton#downloadingButton:checked:pressed,
+MainWindow QPushButton#localButton:checked:pressed{
+	color:rgba(10,141,255,0.8);
+}
+
+MainWindow QPushButton#vidButton{
+	font: normal 14px ;
+	color:#FAFAFA;
+	background:rgba(10,141,255,1);
+	border-radius:2px ;
+}
+MainWindow QPushButton#vidButton:hover{
+	background:rgba(10,141,255,0.8);
+}
+MainWindow QPushButton#vidButton:pressed{
+	background:rgba(10,141,255,0.9);
+}
+
+MainWindow QToolButton#myVideoButton{
+	font: normal 14px;
+	color:#668196;
+	padding-top:14px;
+	padding-bottom:14px;
+	border:none;
+	background: transparent;
+}
+MainWindow QToolButton#myVideoButton:checked{
+	border:none;
+	background: #ffffff;
+}
+MainWindow QToolButton#listVideoButton{
+	font: normal 14px;
+	color:#668196;
+	padding-top:14px;
+	padding-bottom:14px;
+	border:none;
+	background: transparent;
+}
+MainWindow QToolButton#listVideoButton:checked{
+	border:none;
+	background: #ffffff;
+}
+MainWindow QPushButton#paramButton{
+	image: url(:res/images/control/param_normal.svg);
+}
+MainWindow QPushButton#paramButton:hover{
+	image: url(:res/images/control/param_active.svg);
+}
+MainWindow QPushButton#paramButton:pressed{
+	image: url(:res/images/control/param_active.svg);
+}
+MainWindow QPushButton#settingButton{
+	image: url(:res/images/control/setting_normal.svg);
+}
+MainWindow QPushButton#settingButton:hover{
+	image: url(:res/images/control/setting_active.svg);
+}
+MainWindow QPushButton#settingButton:pressed{
+	image: url(:res/images/control/setting_active.svg);
+}
+MainWindow QPushButton#refreshButton{
+	image: url(:res/images/control/retry_normal.svg);
+}
+MainWindow QPushButton#refreshButton:hover{
+	image: url(:res/images/control/retry_active.svg);
+}
+MainWindow QPushButton#refreshButton:pressed{
+	image: url(:res/images/control/retry_active.svg);
+}
+MainWindow QLabel#novideo {
+	image: url(:res/images/common/no_video.svg);
+}
+MainWindow QLabel#nolocalvideo{
+	image: url(:res/images/common/no_completed_video.svg);
+}
+MainWindow QLabel#nodownloadvideo {
+	image: url(:res/images/common/no_download_video.svg);
+}
+MainWindow QHeaderView {
+	font: normal 14px ;
+    color: #668196;
+    background: #FAFAFA;
+}
+MainWindow QHeaderView::section {
+    border: none;
+    border-bottom: 1px solid #EFEFEF;
+    padding-left: 16px;
+	padding-right: 16px;
+    background: #FAFAFA;
+    font: normal 14px ;
+}
+MainWindow QTableWidget {
+    border: none;
+    color: #668196;
+	font: normal 14px ;
+    background: white;
+    alternate-background-color: #F8F8FB;
+}
+MainWindow QTableWidget::item {
+    color: #668196;
+	font: normal 14px ;
+	border-bottom: 1px solid #EFEFEF;
+}
+MainWindow QTableWidget::item:selected {
+    color: rgba(10, 141, 255, 1);
+	font: normal 14px ;
+	border-bottom: 1px solid #EFEFEF;
+}
+
+MainWindow QLabel#vidLabel {
+    color: #668196;
+	font: normal 12px ;
+}
+
+MainWindow QLabel#progressLabel{
+	color: #668196;
+	font:normal 12px ;
+}
+MainWindow QLabel#progressLabel[LabelStyle="error"]{
+	color: #FF5722;
+	font:normal 12px ;
+}
+MainWindow QLabel#speedLabel{
+	color: #0A8DFF;
+	font:normal 12px ;
+}
+
+MainWindow QLabel#imageLabel{
+	image: url(:res/images/common/default_video.svg);
+}
+MainWindow QPushButton#playButton{
+	image: url(:res/images/control/start_normal.svg);
+}
+MainWindow QPushButton#playButton:hover{
+	image: url(:res/images/control/start_active.svg);
+}
+MainWindow QPushButton#playButton:pressed{
+	image: url(:res/images/control/start_active.svg);
+}
+MainWindow QPushButton#downloadButton{
+	image: url(:res/images/control/download_normal.svg);
+}
+MainWindow QPushButton#downloadButton:hover{
+	image: url(:res/images/control/download_active.svg);
+}
+MainWindow QPushButton#downloadButton:pressed{
+	image: url(:res/images/control/download_active.svg);
+}
+MainWindow QPushButton#pauseButton{
+	image: url(:res/images/control/pause_normal.svg);
+}
+MainWindow QPushButton#pauseButton:hover{
+	image: url(:res/images/control/pause_active.svg);
+}
+MainWindow QPushButton#pauseButton:pressed{
+	image: url(:res/images/control/pause_active.svg);
+}
+MainWindow QPushButton#pauseButton:checked{
+	image: url(:res/images/control/play_normal.svg);
+}
+MainWindow QPushButton#pauseButton:checked:hover{
+	image: url(:res/images/control/play_active.svg);
+}
+MainWindow QPushButton#pauseButton:checked:pressed{
+	image: url(:res/images/control/play_active.svg);
+}
+MainWindow QPushButton#retryButton{
+	image: url(:res/images/control/retry_normal.svg);
+}
+MainWindow QPushButton#retryButton:hover{
+	image: url(:res/images/control/retry_active.svg);
+}
+MainWindow QPushButton#retryButton:pressed{
+	image: url(:res/images/control/retry_active.svg);
+}
+MainWindow QPushButton#deleteButton{
+	image: url(:res/images/control/delete_normal.svg);
+}
+MainWindow QPushButton#deleteButton:hover{
+	image: url(:res/images/control/delete_active.svg);
+}
+MainWindow QPushButton#deleteButton:pressed{
+	image: url(:res/images/control/delete_active.svg);
+}
+MainWindow QPushButton#appendButton{
+	image: url(:res/images/control/append_normal.svg);
+}
+MainWindow QPushButton#appendButton:hover{
+	image: url(:res/images/control/append_active.svg);
+}
+MainWindow QPushButton#appendButton:pressed{
+	image: url(:res/images/control/append_active.svg);
+}
+MainWindow QPushButton#openButton{
+	image: url(:res/images/control/open_normal.svg);
+}
+MainWindow QPushButton#openButton:hover{
+	image: url(:res/images/control/open_active.svg);
+}
+MainWindow QPushButton#openButton:pressed{
+	image: url(:res/images/control/open_active.svg);
+}
+MainWindow QPushButton#showVideoButton{
+	image: url(:res/images/control/show_video_normal.svg);
+}
+MainWindow QPushButton#showVideoButton:hover{
+	image: url(:res/images/control/show_video_active.svg);
+}
+MainWindow QPushButton#showVideoButton:pressed{
+	image: url(:res/images/control/show_video_active.svg);
+}
+MainWindow QPushButton#returnVideoButton{
+	color:#ffffff;
+	background: transparent;
+}
+MainWindow QPushButton#returnVideoButton:hover{
+	color:rgba(10,141,255,0.8);
+}
+MainWindow QPushButton#returnVideoButton:pressed{
+	color:rgba(10,141,255,0.9);
+}
+
+/******************************************/
+PlayerWidget{
+	background:#121212;
+}
+PlayerWidget QWidget#control{
+	background:transparent;
+}
+PlayerWidget QWidget#player{
+	background:#121212;
+}
+PlayerWidget QWidget#barWidget{
+	background:rgba(5,5,5,0.5);
+}
+PlayerWidget QPushButton#shotButton{
+	background:rgba(0,0,0,0.5);
+	image: url(:res/images/player/shot_normal.svg);
+}
+PlayerWidget QPushButton#shotButton:hover{
+	image: url(:res/images/player/shot_active.svg);
+}
+PlayerWidget QPushButton#shotButton:pressed{
+	image: url(:res/images/player/shot_active.svg);
+}
+PlayerWidget QPushButton#playButton{
+	image: url(:res/images/player/play_normal.svg);
+}
+PlayerWidget QPushButton#playButton:hover{
+	image: url(:res/images/player/play_active.svg);
+}
+PlayerWidget QPushButton#playButton:pressed{
+	image: url(:res/images/player/play_active.svg);
+}
+PlayerWidget QPushButton#playButton:checked{
+	image: url(:res/images/player/pause_normal.svg);
+}
+PlayerWidget QPushButton#playButton:checked:hover{
+	image: url(:res/images/player/pause_active.svg);
+}
+PlayerWidget QPushButton#playButton:checked:pressed{
+	image: url(:res/images/player/pause_active.svg);
+}
+
+PlayerWidget QPushButton#stopButton{
+	image: url(:res/images/player/stop_normal.svg);
+}
+PlayerWidget QPushButton#stopButton:hover{
+	image: url(:res/images/player/stop_active.svg);
+}
+PlayerWidget QPushButton#stopButton:pressed{
+	image: url(:res/images/player/stop_active.svg);
+}
+
+PlayerWidget QLabel#timeLabel{
+	color: #ffffff;
+	font: normal 14px ;
+}
+
+PlayerWidget QPushButton#speedButton,
+PlayerWidget QPushButton#videoButton{
+	padding-left:6px;
+	padding-right:6px;
+	color:#ffffff;
+	background: transparent;
+}
+PlayerWidget QPushButton#speedButton:hover,
+PlayerWidget QPushButton#videoButton:hover{
+	color:rgba(10,141,255,0.8);
+}
+PlayerWidget QPushButton#speedButton:pressed,
+PlayerWidget QPushButton#videoButton:pressed{
+	color:rgba(10,141,255,0.9);
+}
+
+PlayerWidget QPushButton#volumeButton{
+	image: url(:res/images/player/volume_normal.svg);
+}
+PlayerWidget QPushButton#volumeButton:hover{
+	image: url(:res/images/player/volume_active.svg);
+}
+PlayerWidget QPushButton#volumeButton:pressed{
+	image: url(:res/images/player/volume_active.svg);
+}
+PlayerWidget QPushButton#volumeButton:checked{
+	image: url(:res/images/player/volume_mute_normal.svg);
+}
+PlayerWidget QPushButton#volumeButton:checked:hover{
+	image: url(:res/images/player/volume_mute_active.svg);
+}
+PlayerWidget QPushButton#volumeButton:checked:pressed{
+	image: url(:res/images/player/volume_mute_active.svg);
+}
+
+PlayerWidget QPushButton#fullButton{
+	image: url(:res/images/player/full_normal.svg);
+}
+PlayerWidget QPushButton#fullButton:hover{
+	image: url(:res/images/player/full_active.svg);
+}
+PlayerWidget QPushButton#fullButton:pressed{
+	image: url(:res/images/player/full_active.svg);
+}
+PlayerWidget QPushButton#fullButton:checked{
+	image: url(:res/images/player/exit_full_normal.svg);
+}
+PlayerWidget QPushButton#fullButton:checked:hover{
+	image: url(:res/images/player/exit_full_active.svg);
+}
+PlayerWidget QPushButton#fullButton:checked:pressed{
+	image: url(:res/images/player/exit_full_active.svg);
+}
+
+PlayerWidget QMenu#player{
+    font:normal 14px ;	
+	background: rgba(0, 0, 0, 0.85);
+	border:none;
+}
+PlayerWidget QMenu#player::item {
+    color:#FFFFFF;
+	background: rgba(0, 0, 0, 0.85);
+	border:none;
+    padding-left:20px;
+    padding-right:20px;
+    padding-top:8px;
+    padding-bottom:8px;
+}
+PlayerWidget QMenu#player::item:disabled {
+	color:#bdbdbd;
+	background: transparent;
+}
+PlayerWidget QMenu#player::item:selected {
+	background: rgba(0, 0, 0, 0.6);
+}
+PlayerWidget QPushButton#normalItem{
+	color:#FFFFFF;
+	padding-left:28px;
+    padding-right:28px;
+    padding-top:8px;
+    padding-bottom:8px;
+}
+PlayerWidget QPushButton#normalItem:hover{
+	color:rgba(10,141,255,0.8);
+}
+PlayerWidget QPushButton#normalItem:pressed{
+	color:rgba(10,141,255,0.9);
+}
+PlayerWidget QPushButton#normalItem:disabled{
+	color:#bdbdbd;
+	background: transparent;
+}
+PlayerWidget QPushButton#selectItem{
+	color:#FFFFFF;
+	margin-left:18px;
+    margin-right:18px;
+    margin-top:4px;
+    margin-bottom:4px;
+	border-radius: 10px;
+	border:1px solid #D4D9DF;
+}
+PlayerWidget QPushButton#selectItem:hover{
+	color:rgba(10,141,255,0.8);
+}
+PlayerWidget QPushButton#selectItem:pressed{
+	color:rgba(10,141,255,0.9);
+}
+PlayerWidget QPushButton#selectItem:disabled{
+	color:#bdbdbd;
+	background: transparent;
+}
+
+/******************************************/
+VolumeControl{
+    background-color:#2B334C;
+}
+
+/******************************************/
+LoginDialog QWidget#mainWidget{
+	background-color:#ffffff;
+	border:1px solid #EDF1F7;
+}
+LoginDialog TitleBar QWidget#titleBg{
+	background-color:#ffffff;
+}
+LoginDialog QPushButton#minimize{
+	image: url(:res/images/title/minimize_normal2.svg);
+}
+LoginDialog QPushButton#minimize:hover{
+	image: url(:res/images/title/minimize_active2.svg);
+}
+LoginDialog QPushButton#minimize:pressed{
+   image: url(:res/images/title/minimize_active2.svg);
+}
+LoginDialog TitleBar QPushButton#close{
+	image: url(:res/images/title/close_normal2.svg);
+}
+LoginDialog TitleBar QPushButton#close:hover{
+	image: url(:res/images/title/close_active2.svg);
+}
+LoginDialog TitleBar QPushButton#close:pressed{
+	image: url(:res/images/title/close_active2.svg);
+}
+LoginDialog QLabel#logoLabel{	
+	image: url(:res/images/title/logo2.svg);
+}
+LoginDialog QPushButton#login{
+	border:none;
+	border-radius: 2px;
+	background: #0A8DFF;
+	color: #FFFFFF;
+	font:normal 14px ;
+}
+LoginDialog QPushButton#login:hover{
+	background:rgba(10,141,255,0.8);
+}
+LoginDialog QPushButton#login:pressed{
+	background:rgba(10,141,255,0.9);
+}
+LoginDialog QPushButton#login:disabled{
+	background: #0A8DFF;
+}
+LoginDialog QCheckBox#errorButton {
+    font: normal 12px ;
+    background-color: transparent;
+    color: #FF5722;
+}
+LoginDialog QCheckBox#errorButton::indicator:unchecked {
+    image: url(:res/images/tips/icon_info.svg);
+}
+LoginDialog QCheckBox#errorButton::indicator:checked {
+    image: url(:res/images/tips/icon_info.svg);
+}
+
+/******************************************/
+ParamDialog QWidget#mainWidget{
+	background-color:#ffffff;
+	border:1px solid #EDF1F7;
+}
+ParamDialog TitleBar QWidget#titleBg{
+	background-color:#ffffff;
+}
+ParamDialog TitleBar QLabel#titleLabel{
+	color:#668196;
+}
+ParamDialog TitleBar QPushButton#close{
+	image: url(:res/images/title/close_normal2.svg);
+}
+ParamDialog TitleBar QPushButton#close:hover{
+	image: url(:res/images/title/close_active2.svg);
+}
+ParamDialog TitleBar QPushButton#close:pressed{
+	image: url(:res/images/title/close_active2.svg);
+}
+ParamDialog QWidget#contentWidget{
+	border-top:1px solid #EFEFEF;
+}
+ParamDialog QHeaderView {
+    background: white;
+	border: none;
+}
+ParamDialog QHeaderView::section {
+    background: white;
+	border: none;
+}
+ParamDialog QTableWidget {
+    border: none;
+    color: #668196;
+	font: normal 14px ;
+    background: white;
+    alternate-background-color: #F8F8FB;
+}
+ParamDialog QTableWidget::item {
+    border: none;
+	color: #668196;
+	font: normal 14px ;
+}
+ParamDialog QTableWidget::item:alternate {
+    padding: 0px;
+    background: #F8F8FB;
+}
+
+/******************************************/
+SettingDialog QWidget#mainWidget{
+	background-color:#ffffff;
+	border:1px solid #EDF1F7;
+}
+SettingDialog TitleBar QWidget#titleBg{
+	background-color:#ffffff;
+}
+SettingDialog TitleBar QLabel#titleLabel{
+	color:#668196;
+}
+SettingDialog TitleBar QPushButton#close{
+	image: url(:res/images/title/close_normal2.svg);
+}
+SettingDialog TitleBar QPushButton#close:hover{
+	image: url(:res/images/title/close_active2.svg);
+}
+SettingDialog TitleBar QPushButton#close:pressed{
+	image: url(:res/images/title/close_active2.svg);
+}
+SettingDialog QScrollArea#scrollArea{
+	border-top:1px solid #EFEFEF;
+}
+SettingDialog QWidget#contentWidget{
+	background-color:#ffffff;
+}
+SettingDialog QPushButton#pathButton,
+SettingDialog QPushButton#screenshotButton{
+	border:none;
+	background:transparent;
+	color:rgba(10,141,255,1);
+	font:normal 14px ;
+}
+SettingDialog QPushButton#pathButton:hover,
+SettingDialog QPushButton#screenshotButton:hover{
+	color:rgba(10,141,255,0.8);
+}
+SettingDialog QPushButton#pathButton:pressed,
+SettingDialog QPushButton#screenshotButton:pressed{
+	color:rgba(10,141,255,0.9);
+}
