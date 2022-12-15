@@ -16,6 +16,7 @@ public:
     explicit ParamDialog(QWidget *parent = 0);
     ~ParamDialog();
 
+	void SetVideoName(const QString& name);
 	void SetPropValue(int prop, const QString& value);
 private slots:
 	void OnPropReset(void);

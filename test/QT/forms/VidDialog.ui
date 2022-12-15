@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Setting</string>
+   <string>VidDialog</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
@@ -36,16 +36,16 @@
        <number>0</number>
       </property>
       <property name="leftMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="topMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="rightMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="bottomMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <item>
        <widget class="TitleBar" name="titleBar" native="true">
@@ -70,13 +70,13 @@
           <number>80</number>
          </property>
          <property name="topMargin">
-          <number>0</number>
+          <number>10</number>
          </property>
          <property name="rightMargin">
           <number>80</number>
          </property>
          <property name="bottomMargin">
-          <number>24</number>
+          <number>10</number>
          </property>
          <item>
           <widget class="QLabel" name="label_4">
@@ -140,8 +140,14 @@
              <property name="cursor">
               <cursorShape>PointingHandCursor</cursorShape>
              </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="text">
               <string>Get</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
              </property>
              <property name="ButtonStyle" stdset="0">
               <string>blue</string>
@@ -184,7 +190,4 @@
   <include location="../Resource.qrc"/>
  </resources>
  <connections/>
- <buttongroups>
-  <buttongroup name="buttonGroup"/>
- </buttongroups>
 </ui>

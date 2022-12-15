@@ -4,8 +4,11 @@
 #include <QPushButton>
 #include <QHBoxLayout>
 
-class WindowHelper;
-
+//class WindowHelper;
+//class ShadowHelper;
+#ifdef _WIN32
+class FramelessHelper;
+#endif
 
 enum TitleBtnType {
 	TITLE_MIN_BTN = 0X0001,
@@ -26,27 +29,26 @@ public:
 	 * \param parent
 	 */
 	explicit TitleBar(QWidget *parent);
+	~TitleBar();
 
-	
 	void Init(QWidget* parent, TitleBtnTypes type);
 	QPushButton* Button(TitleBtnTypes type);
 	void SetResizable(bool resizable);
-	bool IsResizable(void) const;
-	void SetSimplifyMode(bool mode);
-	bool IsSimplifyMode(void) const;
+#ifdef _WIN32
+	void SetResizeTitleColor(const QColor& color);
+	void SetResizeFrameColor(const QColor& color);
+#endif
 
-
-	void SetFullScreen(bool full);
 	void SetMaximize(bool max);
 	void SetMaximizeStatus(bool status);
 	bool IsMaximize(void) const;
 	void ShowNormal(void);
 	void ShowMaximize(void);
+	void ShowFullScreen(bool fullscreen);
 
 	void SetLogoable(bool enable, const QSize& size);
 	void SetTitleable(bool enable);
 	
-
 	void SetTitleName(const QString& titleName);
 	QString GetTitleName(void) const;
 
@@ -57,13 +59,8 @@ public:
 
 signals:
 	void SignalClose(void);
-	void SignalMaximize(bool maximize);
 
 protected:
-	virtual void mousePressEvent(QMouseEvent *me);
-	virtual void mouseMoveEvent(QMouseEvent* me);
-	virtual void mouseReleaseEvent(QMouseEvent *me);
-	virtual void mouseDoubleClickEvent(QMouseEvent *event);
 	virtual bool eventFilter(QObject* obj, QEvent* e);
 
 protected:
@@ -80,15 +77,17 @@ protected:
 	QWidget* centerEntendWidget = nullptr;
 	QWidget* rightExtendWidget = nullptr;
 
-	QPoint startPos;
-	QPoint clickPos;
-	bool isMoving = false;
-	bool isPressed = false;
-	//bool isDoubleClick = false;
-	bool isSimplifyMode = false;
+	bool isFullscreenMax = false;
 
-	QRect rcOldGeometry;
-	WindowHelper* windowHelper = nullptr;
+
+	//QPoint startPos;
+	//QPoint clickPos;
+	//bool isMoving = false;
+	//bool isPressed = false;
+	//QRect rcOldGeometry;
+#ifdef _WIN32
+	FramelessHelper* framelessHelper = nullptr;
+#endif
 };
 ///////////////////////////////////////////////////
 class CustomTitle :public TitleBar

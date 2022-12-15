@@ -6,14 +6,18 @@ StatusButton::StatusButton(QWidget *parent/* = nullptr*/)
 	: QPushButton(parent)
 {
 	setAutoDefault(false);
+	setDefault(false);
 	setCursor(QCursor(Qt::PointingHandCursor));
+	setFocusPolicy(Qt::NoFocus);
 }
 
 StatusButton::StatusButton(QWidget *parent, const QString& name, const QString& text)
 	: QPushButton(parent)
 {
 	setAutoDefault(false);
+	setDefault(false);
 	setCursor(QCursor(Qt::PointingHandCursor));
+	setFocusPolicy(Qt::NoFocus);
 	setObjectName(name);
 	setText(text);
 	SetShowText(true);
@@ -24,7 +28,9 @@ StatusButton::StatusButton(QWidget *parent, const QString& name, const QString& 
 	: QPushButton(parent)
 {
 	setAutoDefault(false);
+	setDefault(false);
 	setCursor(QCursor(Qt::PointingHandCursor));
+	setFocusPolicy(Qt::NoFocus);
 	setObjectName(name);
 	setCheckable(true);
 	setChecked(false);
@@ -37,7 +43,9 @@ StatusButton::StatusButton(QWidget *parent, const QString& name, const QString& 
 	: QPushButton(parent)
 {
 	setAutoDefault(false);
+	setDefault(false);
 	setCursor(QCursor(Qt::PointingHandCursor));
+	setFocusPolicy(Qt::NoFocus);
 	setObjectName(name);
 	setToolTip(tooltip);
 	SetShowText(false);
@@ -49,7 +57,9 @@ StatusButton::StatusButton(QWidget *parent, const QString& name, const QString& 
 	: QPushButton(parent)
 {
 	setAutoDefault(false);
+	setDefault(false);
 	setCursor(QCursor(Qt::PointingHandCursor));
+	setFocusPolicy(Qt::NoFocus);
 	setObjectName(name);
 	setCheckable(true);
 	setChecked(false);

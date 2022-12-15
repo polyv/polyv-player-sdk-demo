@@ -2,6 +2,7 @@
 
 #include <QMenu>
 #include <QTime>
+#include <QMovie>
 #include <QDateTime>
 #include <QPointer>
 #include <QSlider>
@@ -17,51 +18,60 @@
 #include "SliderControl.h"
 #include "VolumeControl.h"
 #include "TipsWidget.h"
-#include "SettingDialog.h"
+#include "ParamDialog.h"
+#include "MsgBoxDialog.h"
 
-
-
-PlayerWidget::PlayerWidget(QWidget* parent)
-	: QWidget(parent)
-{	
-	playerWidget = new QWidget(this);
-	playerWidget->setObjectName("player");
-	playerWidget->setAttribute(Qt::WA_NativeWindow);
-	//playerWidget->setAttribute(Qt::WA_PaintOnScreen);
-	//playerWidget->setAttribute(Qt::WA_DontCreateNativeAncestors);
-
-	controlWidget = new QWidget(this);
-	controlWidget->setObjectName("control");
-	controlWidget->setFocusPolicy(Qt::NoFocus);
-	controlWidget->setAttribute(Qt::WA_NoSystemBackground);
-	controlWidget->setAttribute(Qt::WA_TranslucentBackground);
-	controlWidget->setAttribute(Qt::WA_ShowWithoutActivating);
-	controlWidget->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
-	controlWidget->setVisible(isShowControl);
+///////////////////////////////////////////////////////
+PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
+	: QStackedWidget(parent),
+	player(_player)
+{
+	Qt::WindowFlags f = Qt::FramelessWindowHint;
 #ifdef _WIN32
-	// remove top-level window
-	SetWindowLongPtr((HWND)(controlWidget->winId()), GWL_EXSTYLE,
-		GetWindowLong((HWND)(controlWidget->winId()), GWL_EXSTYLE) & ~WS_EX_APPWINDOW);
+	f |= Qt::SplashScreen;// Qt::SubWindow, Qt::SplashScreen
+#else
+	f |= Qt::Tool;
+	f |= Qt::NoDropShadowWindowHint;
+	//f |= Qt::WindowStaysOnTopHint;
+	//f |= Qt::BypassWindowManagerHint;
+	//f |= Qt::WindowDoesNotAcceptFocus;
 #endif
-	
-	QVBoxLayout* layout = new QVBoxLayout();
-	layout->setSpacing(0);
-	layout->setContentsMargins(0, 0, 0, 0);
-	layout->addWidget(playerWidget);
-	//layout->addWidget(controlWidget);
-	setLayout(layout);
+	setWindowFlags(f);
+	setFocusPolicy(Qt::NoFocus);
+	setAttribute(Qt::WA_NoSystemBackground);
+	setAttribute(Qt::WA_TranslucentBackground);
+	setAttribute(Qt::WA_ShowWithoutActivating);
+	setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 
-	QPushButton* shotImage = new StatusButton(controlWidget, "shotButton", QTStr("ShotScreen"), QSize(40, 40));
-	connect(shotImage, &QPushButton::clicked, [this] {
+	QStackedLayout* mainLayout = (QStackedLayout*)this->layout();
+	mainLayout->setSpacing(0);
+	mainLayout->setContentsMargins(0, 0, 0, 0);
+	mainLayout->setStackingMode(QStackedLayout::StackAll);
+
+	shotButton = new StatusButton(this, "shotButton", QTStr("ShotScreen"), QSize(40, 40));
+	shotButton->setVisible(false);
+	connect(shotButton, &QPushButton::clicked, this, [this] {
 		auto path = App()->GlobalConfig().Get("Download", "ScreenshotPath").toString();
 		if (path.isEmpty()) {
 			return;
 		}
 		QString filename = QString("%1/%2.jpg").arg(path).
 			arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss"));
-		PLVPlayerScreenshot(mediaPlayer, QT_TO_UTF8(filename));
+		player->Screenshot(filename);
+		QString tip = QString(tr("ShotSucess")).arg(filename);
+		TipsWidget::ShowToast((QWidget*)this->parent(), tip);
 	});
-	mediaSlide = new SliderControl(controlWidget);
+
+	shotPanelHideTimer = new QTimer(this);
+	shotPanelHideTimer->setInterval(500);
+	connect(shotPanelHideTimer, &QTimer::timeout, this, [&] {
+		if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
+			shotPanelHideTimer->stop();
+			shotButton->setVisible(false);
+		}
+	});
+
+	mediaSlide = new SliderControl(this);
 	mediaSlide->setObjectName(QStringLiteral("timeSlide"));
 	mediaSlide->setFixedHeight(14);
 	mediaSlide->setCursor(QCursor(Qt::PointingHandCursor));
@@ -70,89 +80,68 @@ PlayerWidget::PlayerWidget(QWidget* parent)
 	mediaSlide->setMinimum(0);
 	mediaSlide->setMaximum(100);
 
-	connect(mediaSlide, &QSlider::valueChanged, [this](int pos) {
-		if (!PLVPlayerIsLoaded(mediaPlayer)) {
+	connect(mediaSlide, &QSlider::valueChanged, this, [this](int pos) {
+		if (!player->IsLoaded()) {
 			return;
 		}
-		PLVPlayerSetSeek(mediaPlayer, pos, true);
+		player->SetSeek(pos);
 	});
 
-	startButton = new StatusButton(controlWidget,
+	auto startButton = new StatusButton(this,
 		"playButton", QTStr("Play"), QTStr("Pause"), QSize(24, 24));
-	connect(startButton, &QPushButton::clicked, [this] {
-		if (PLVPlayerIsLoaded(mediaPlayer)) {
-			bool pause = !PLVPlayerIsPause(mediaPlayer);
-			PLVPlayerPause(mediaPlayer, pause);
+	connect(startButton, &QPushButton::clicked, this, [this, startButton] {
+		if (player->IsLoaded()) {
+			player->Pause(!player->IsPause());
 		}
-		else if(videoInfo){
-			if (isLocal) {
-				PLVPlayerPlayLocal(mediaPlayer, 0);
-			}
-			else {
-				//PLVPlayerPlay("");
-				QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-					Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("TokenTip")));
-				startButton->setChecked(false);
-			}
+		else if (isLocalPlay && curVideo) {
+			player->PlayLocal(0);
+		}
+		else if (curVideo){
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnChangeRatePlayVideo", Qt::QueuedConnection,
+				Q_ARG(int, curRate), Q_ARG(int, 0), Q_ARG(const SharedVideoPtr&, curVideo));
 		}
 		else {
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+				Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("TokenTip")));
 			startButton->setChecked(false);
 		}
 	});
-	stopButton = new StatusButton(controlWidget,
+	auto stopButton = new StatusButton(this,
 		"stopButton", QTStr("Stop"), QSize(24, 24));
-	connect(stopButton, &QPushButton::clicked, [this] {
-		PLVPlayerStop(mediaPlayer);
+	connect(stopButton, &QPushButton::clicked, this, [this] {
+		player->Stop();
 	});
-	timeLabel = new QLabel(this);
+	auto timeLabel = new QLabel(this);
 	timeLabel->setObjectName("timeLabel");
-	timeLabel->setText("00:00:00");
+	timeLabel->setText("00:00:00/00:00:00");
+	timeLabel->setProperty("duration", "00:00:00");
 
-	//curRate = App()->GlobalConfig().GetInt("Player", "Video");
-	//curSpeed = App()->GlobalConfig().GetDouble("Player", "Speed");
-
-	QPushButton* speedButton = new StatusButton(controlWidget, "speedButton",
+	speedButton = new StatusButton(this, "speedButton",
 		GetSpeedName(curSpeed));
-	connect(speedButton, &QPushButton::clicked, [this, speedButton] {
-		QPointer<QMenu> popup = new QMenu(this);
-		popup->setObjectName("player");
-		double value = curSpeed;// App()->GlobalConfig().GetDouble("Player", "Speed");
-		auto AddAction = [this, speedButton, value](QPointer<QMenu>& menu, const QString& name, double type) {
+	connect(speedButton, &QPushButton::clicked, this, [this] {
+		popup = new QMenu(this);
+		popup->setObjectName("playerMenu");
+		double value = curSpeed;
+		auto AddAction = [this, value](QPointer<QMenu>& menu, double type) {
 			bool select = (type == value);
-			//if (select) {
-			//	curSpeed = type;
-			//}
-			QWidgetAction *action = new QWidgetAction(this);
+			QWidgetAction* action = new QWidgetAction(this);
 			QPushButton* item = new QPushButton(this);
 			item->setCursor(QCursor(Qt::PointingHandCursor));
 			item->setObjectName(select ? "selectItem" : "normalItem");
-			item->setText(name);
-			//itemName->setAlignment(Qt::AlignCenter);
+			item->setText(GetSpeedName(type));
 			action->setDefaultWidget(item);
-			//QAction *item = new QAction(name, this);
 			menu->addAction(action);
-			//connect(itemName, SIGNAL(clicked()), itemAction, SLOT(trigger()));
-			//connect(item, &QPushButton::clicked,
-			//	std::bind(&QMenu::triggered, menu, action));
-			connect(item, &QPushButton::clicked, [&, speedButton, name, type, menu](bool pause) {
+			connect(item, &QPushButton::clicked, this, [&, type, menu](bool pause) {
 				menu->hide();
 				menu->deleteLater();
-				speedButton->setText(name);
-				curSpeed = type;
-				//App()->GlobalConfig().SetDouble("Player", "Speed", type);
-
-				if (PLVPlayerIsLoaded(mediaPlayer)) {
-					PLVPlayerSetSpeed(mediaPlayer, curSpeed);
-				}
+				SetSpeed(type);
 			});
 		};
-		AddAction(popup, QTStr("0.5x"), kSpeed05);
-		AddAction(popup, QTStr("1.0x"), kSpeed10);
-		AddAction(popup, QTStr("1.2x"), kSpeed12);
-		AddAction(popup, QTStr("1.5x"), kSpeed15);
-		AddAction(popup, QTStr("2.0x"), kSpeed20);
-		/*auto pos = multipleButton->mapToGlobal(multipleButton->pos());
-		popup->exec(QPoint(pos.x() - 12, pos.y() - 12));*/
+		AddAction(popup, kSpeed05);
+		AddAction(popup, kSpeed10);
+		AddAction(popup, kSpeed12);
+		AddAction(popup, kSpeed15);
+		AddAction(popup, kSpeed20);
 		QPoint ptY = mediaSlide->mapToGlobal(QPoint(0, 0));
 		QPoint ptShow = speedButton->mapToGlobal(QPoint(speedButton->width() >> 1, 0));
 		popup->show();
@@ -160,77 +149,42 @@ PlayerWidget::PlayerWidget(QWidget* parent)
 		ptShow.setY(ptY.y() - popup->height());
 		popup->move(ptShow);
 	});
-	videoButton = new StatusButton(controlWidget, "videoButton",
+	videoButton = new StatusButton(this, "videoButton",
 		GetVideoName(curRate));
-	connect(videoButton, &QPushButton::clicked, [this] {
-		QPointer<QMenu> popup = new QMenu(this);
-		popup->setObjectName("player");
-		int value = curRate;// App()->GlobalConfig().GetInt("Player", "Video");
-		auto AddAction = [this, value](QPointer<QMenu>& menu, const QString& name, int type) {
+	connect(videoButton, &QPushButton::clicked, this, [this] {
+		popup = new QMenu(this);
+		popup->setObjectName("playerMenu");
+		int value = curRate;
+		
+		auto AddAction = [this, value](QPointer<QMenu>& menu, int type, bool enable = true) {
 			bool select = (value == type);
-			//if (select) {
-			//	curRate = type;
-			//}
-			QWidgetAction *action = new QWidgetAction(this);
+			QWidgetAction* action = new QWidgetAction(this);
 			QPushButton* item = new QPushButton(this);
 			item->setCursor(QCursor(Qt::PointingHandCursor));
 			item->setObjectName(select ? "selectItem" : "normalItem");
-			item->setText(name);
-			//itemName->setAlignment(Qt::AlignCenter);
+			item->setText(GetVideoName(type));
 			action->setDefaultWidget(item);
-
-			if (type <= rateCount) {
-				action->setEnabled(true);
-			}
-			else {
-				action->setEnabled(false);
-			}
-			//QAction *item = new QAction(name, this);
+			action->setEnabled(enable);
 			menu->addAction(action);
-			//connect(itemName, SIGNAL(clicked()), itemAction, SLOT(trigger()));
-			//connect(item, &QPushButton::clicked,
-			//	std::bind(&QMenu::triggered, menu, action));
-			connect(item, &QPushButton::clicked, [&, name, menu, type](bool pause) {
+			connect(item, &QPushButton::clicked, this, [&, menu, type](bool pause) {
 				menu->hide();
 				menu->deleteLater();
-				int pos = mediaSlide->value();
-				if (isLocal) {
-					if (videoInfo && PLVCheckFileComplete(videoInfo->vid.c_str(), videoInfo->filePath.c_str(), type)) {
-						PLVPlayerStop(mediaPlayer);
-						int ret = PLVPlayerSetVideo(mediaPlayer, videoInfo->vid.c_str(), videoInfo->filePath.c_str(), type);
-						if (E_NO_ERR != ret) {
-							slog_error("[sdk]:set player info error:%d", ret);
-							QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-								Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("PlayerError")));
-							return;
-						}
-						UpdateOSD();
-						ret = PLVPlayerPlayLocal(mediaPlayer, pos);
-						if (E_NO_ERR != ret) {
-							slog_error("[sdk]:play local error:%d", ret);
-							QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-								Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("PlayerError")));
-							return;
-						}
-						videoButton->setText(name);
-						curRate = type;
-					}
-					else {
-						QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-							Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("NoDownloadVideo")));
-					}
-				}
-				else {
-					QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnChangeRatePlayVideo", Qt::QueuedConnection,
-						Q_ARG(int, type), Q_ARG(int, pos), Q_ARG(const SharedVideoPtr&, videoInfo));
-				}
+				SetRate(type, true);
 			});
 		};
-		AddAction(popup, QTStr("Auto"), VIDEO_RATE_AUTO);
-		AddAction(popup, QTStr("SD"), VIDEO_RATE_SD);
-		AddAction(popup, QTStr("HD"), VIDEO_RATE_HD);
-		AddAction(popup, QTStr("BD"), VIDEO_RATE_BD);
-
+		if (isLocalPlay) {
+			for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
+				AddAction(popup, i, curVideo ? (SdkManager::GetManager()->CheckFileComplete(
+					QString::fromStdString(curVideo->vid), QString::fromStdString(curVideo->filePath), i)): false);
+			}
+		}
+		else{
+			int rateCount = player->GetRateCount();
+			AddAction(popup, VIDEO_RATE_AUTO, rateCount > VIDEO_RATE_AUTO);
+			for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
+				AddAction(popup, i, rateCount >= i);
+			}
+		}	
 		QPoint ptY = mediaSlide->mapToGlobal(QPoint(0, 0));
 		QPoint ptShow = videoButton->mapToGlobal(QPoint(videoButton->width() >> 1, 0));
 		popup->show();
@@ -238,46 +192,65 @@ PlayerWidget::PlayerWidget(QWidget* parent)
 		ptShow.setY(ptY.y() - popup->height());
 		popup->move(ptShow);
 	});
+
+	volumePanel = new VolumeControl(this);
+	volumePanel->hide();
+	volumePanel->SetValue(50);
+	connect(volumePanel, &VolumeControl::SignalVolume, this, [this](int volume) {
+		volumeButton->setChecked(0 == volume ? true : false);
+		player->SetVolume(volume);
+		player->SetMute(0 == volume ? true : false);
+	});
 	volumeButton = new StatusButton(this, "volumeButton", QTStr("Mute"), QTStr("UnMute"), QSize(24, 24));
-	connect(volumeButton, &QPushButton::clicked, [this] {
+	connect(volumeButton, &QPushButton::clicked, this, [this] {
 		bool mute = true;
-		if (PLVPlayerIsLoaded(mediaPlayer)) {
-			mute = PLVPlayerIsMute(mediaPlayer);
+		if (player->IsLoaded()) {
+			mute = player->IsMute();
 		}
 		else {
 			mute = volumeButton->isChecked();
 		}
-		PLVPlayerSetMute(mediaPlayer, !mute);
-		mute = PLVPlayerIsMute(mediaPlayer);
+		player->SetMute(!mute);
+		mute = player->IsMute();
 		if (mute) {
 			volumePanel->SetValue(0);
 		}
 		else {
 			int old = volumePanel->GetOldValue();
 			volumePanel->SetValue(0 == old ? 50 : old);
-			PLVPlayerSetVolume(mediaPlayer, volumePanel->GetValue());
+			player->SetVolume(volumePanel->GetValue());
 		}
 		volumeButton->setChecked(mute);
 	});
-	fullButton = new StatusButton(controlWidget, "fullButton", QTStr("FullScreen"), QTStr("ExitFullScreen"), QSize(24, 24));
-	connect(fullButton, &QPushButton::clicked, [&](bool full) {
-		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), full ? "OnFullScreen" : "OnExitFullScreen");
+	volumePanelHideTimer = new QTimer(this);
+	volumePanelHideTimer->setInterval(500);
+	connect(volumePanelHideTimer, &QTimer::timeout, this, [this] {
+		if (!volumePanel->geometry().contains(QCursor::pos())) {
+			volumePanelHideTimer->stop();
+			volumePanel->hide();
+		}
 	});
 
-	rightWidget = new QWidget(controlWidget);
-	rightWidget->setObjectName("rightWidget");
-	rightWidget->setFixedWidth(60);
+	auto fullButton = new StatusButton(this, "fullButton", QTStr("FullScreen"), QTStr("ExitFullScreen"), QSize(24, 24));
+	connect(fullButton, &QPushButton::clicked, this, [this](bool full) {	
+		QMetaObject::invokeMethod((QWidget*)filterObject, full ? "OnFullScreen" : "OnExitFullScreen");
+		//isFullScreen = full;
+		//activeTime = time(NULL);
+		//full ? fullScreenTimer->start() : fullScreenTimer->stop();
+		//if (!full) {
+		//	setVisible(true);
+		//}
+	});
 
-	QHBoxLayout* rightLayout = new QHBoxLayout();
-	rightLayout->setContentsMargins(0, 0, 20, 0);
-	rightLayout->addWidget(shotImage, 0, Qt::AlignCenter);
-	rightWidget->setLayout(rightLayout);
+	QHBoxLayout* shotLayout = new QHBoxLayout();
+	shotLayout->setContentsMargins(0, 0, 20, 0);
+	shotLayout->addWidget(shotButton, 0, Qt::AlignCenter);
 
 	QHBoxLayout* topLayout = new QHBoxLayout();
 	topLayout->addStretch(1);
 	topLayout->setSpacing(0);
-	topLayout->setContentsMargins(0, 0, 0, 0);
-	topLayout->addWidget(rightWidget);
+	topLayout->setContentsMargins(1, 0, 1, 0);
+	topLayout->addLayout(shotLayout);
 
 	QHBoxLayout* barLayout = new QHBoxLayout();
 	barLayout->setSpacing(16);
@@ -297,384 +270,321 @@ PlayerWidget::PlayerWidget(QWidget* parent)
 	bottomLayout->addWidget(mediaSlide);
 	bottomLayout->addLayout(barLayout);
 
-	controlBarWidget = new QWidget(controlWidget);
-	controlBarWidget->setObjectName("barWidget");
-	controlBarWidget->setFixedHeight(50 + 14);
-	controlBarWidget->setLayout(bottomLayout);
+	barWidget = new QWidget(this);
+	barWidget->setObjectName("bar");
+	barWidget->setFixedHeight(50 + 14);
+	barWidget->setLayout(bottomLayout);
 
-	QVBoxLayout* controlLayout = new QVBoxLayout();
-	controlLayout->setSpacing(0);
-	controlLayout->setContentsMargins(0, 0, 0, 0);
-	controlLayout->addLayout(topLayout, 1);
-	controlLayout->addWidget(controlBarWidget);
+	auto controlWidget = new QWidget(this);
+	QVBoxLayout* layout = new QVBoxLayout();
+	layout->setSpacing(0);
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->addLayout(topLayout, 1);
+	layout->addWidget(barWidget);
+	controlWidget->setLayout(layout);
+	controlWidget->setFocusPolicy(Qt::NoFocus);
+	controlWidget->setAttribute(Qt::WA_ShowWithoutActivating);
+	addWidget(controlWidget);
 
-	controlWidget->setLayout(controlLayout);
-
-	hideTimer = new QTimer(this);
-	hideTimer->setInterval(200);
-	connect(hideTimer, &QTimer::timeout, [&] {
-		if (!rect().contains(mapFromGlobal(QCursor::pos()))) {
-			hideTimer->stop();
-			SetPanelVisible(false);
-		}
-	});
+	loadingWidget = new QWidget(this);
+	loadingWidget->setObjectName("loading");
+	loadingMovie = new QMovie(":/res/images/player/loading.gif");
+	auto loadingLabel = new QLabel(loadingWidget);
+	loadingLabel->setFixedSize(QSize(96, 96));
+	loadingLabel->setMovie(loadingMovie);
+	layout = new QVBoxLayout();
+	layout->setSpacing(0);
+	layout->setContentsMargins(0, 0, 0, 1);
+	layout->addWidget(loadingLabel, 0, Qt::AlignCenter);
+	loadingWidget->setLayout(layout);
+	addWidget(loadingWidget);
 	
-	volumeHideTimer = new QTimer(this);
-	volumeHideTimer->setInterval(200);
-	connect(volumeHideTimer, &QTimer::timeout, [&] {
-		if (!volumePanel->geometry().contains(QCursor::pos())) {
-			volumeHideTimer->stop();
-			volumePanel->hide();
+	connect(player, &Player::SignalState, this, [this](int state) {
+		switch (state)
+		{
+		case MEDIA_STATE_PLAY:
+			isEnd = false;
+			findChild<QPushButton*>("playButton")->setChecked(true);
+			break;
+		case MEDIA_STATE_PAUSE:
+			findChild<QPushButton*>("playButton")->setChecked(false);
+			break;
+		case MEDIA_STATE_BEGIN_CACHE:
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+				Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("BeingCache")));
+			break;
+		case MEDIA_STATE_END_CACHE:
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+				Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("EndCache")));
+			break;
+		case MEDIA_STATE_BEGIN_SEEKING:
+			//QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+			//	Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("BeingSeeking")));
+			loadingWidget->setVisible(true);
+			loadingMovie->start();
+			break;
+		case MEDIA_STATE_END_SEEKING:
+			//QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+			//	Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("EndSeeking")));
+			loadingWidget->setVisible(false);
+			loadingMovie->stop();
+			break;
+		case MEDIA_STATE_LOADING:
+			isEnd = false;
+			loadingWidget->setVisible(true);
+			loadingMovie->start();
+			break;
+		case MEDIA_STATE_LOADED:
+			isEnd = false;
+			loadingWidget->setVisible(false);
+			loadingMovie->stop();
+			break;
+		case MEDIA_STATE_FAIL:
+			isEnd = true;
+			Reset();
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+				Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("PlayerError")));
+			break;
+		case MEDIA_STATE_END:
+			isEnd = true;
+			Reset();
+			mapProperty.clear();
+			emit SignalPropReset();
+			break;
+		default:
+			break;
 		}
 	});
-	volumePanel = new VolumeControl(this);
-	volumePanel->hide();
-	volumePanel->SetValue(50);
-	connect(volumePanel, &VolumeControl::SignalVolume, [this](int volume) {
-		volumeButton->setChecked(0 == volume ? true : false);
-		PLVPlayerSetVolume(mediaPlayer, volume);
-		PLVPlayerSetMute(mediaPlayer, 0 == volume ? true : false);
-	});
-
-	volumeButton->installEventFilter(this);
-	volumePanel->installEventFilter(this);
-	this->installEventFilter(this);
-
-	SetPanelVisible(false);
-
-	mediaPlayer = PLVPlayerCreate((void*)playerWidget->winId());
-
-	PLVPlayerSetStateHandler(mediaPlayer, [](const char* vid, int state, void* data) {
-		(void)vid;
-		PlayerWidget* obj = (PlayerWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnPlayerStateHandler", Qt::QueuedConnection,
-			Q_ARG(int, state));
-	}, this);
-	PLVPlayerSetPropertyHandler(mediaPlayer, [](const char* vid, int property, int format, const char* value, void* data) {
-		(void)vid;
-		PlayerWidget* obj = (PlayerWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnPlayerPropertyHandler", Qt::QueuedConnection,
-			Q_ARG(int, property), Q_ARG(int, format), Q_ARG(QString, value));
-	}, this);
-	PLVPlayerSetRateChangeHandler(mediaPlayer, [](const char* vid, int inputBitRate, int realBitRate, void* data) {
-		(void)vid;
-		PlayerWidget* obj = (PlayerWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnPlayerRateChangeHandler", Qt::QueuedConnection,
-			Q_ARG(int, inputBitRate), Q_ARG(int, realBitRate));
-	}, this);
-	PLVPlayerSetProgressHandler(mediaPlayer, [](const char* vid, int millisecond, void* data) {
-		(void)vid;
-		PlayerWidget* obj = (PlayerWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnPlayerProgressHandler", Qt::QueuedConnection,
-			Q_ARG(int, millisecond));
-	}, this);
-    PLVPlayerSetAudioDeviceHandler(mediaPlayer, [](const char* vid, int audioDeviceCount, void* data) {
-        (void)vid;
-        PlayerWidget* obj = (PlayerWidget*)data;
-        QMetaObject::invokeMethod(obj, "OnPlayerAudioDeviceHandler", Qt::QueuedConnection,
-            Q_ARG(int, audioDeviceCount));
-    }, this);
-}
-
-PlayerWidget::~PlayerWidget(void)
-{
-	//PLVPlayerDestroy(mediaPlayer);
-	//mediaPlayer = nullptr;
-}
-
-void PlayerWidget::OnPlayerStateHandler(int state)
-{
-	qDebug() << "the state:" << state;
-	switch (state)
-	{
-	case MEDIA_STATE_PLAY:
-		startButton->setChecked(true);
-
-		//QTimer::singleShot(1000, [&] {
-		//	PLVPlayerSetSeek(mediaPlayer, PLVPlayerGetDuration(mediaPlayer), false);
-		//});
-
-		//QTimer::singleShot(1000, [&] {
-		//	PLVPlayerSeekToEnd(mediaPlayer);
-		//});
-		break;
-	case MEDIA_STATE_PAUSE:
-		startButton->setChecked(false);
-
-		//QTimer::singleShot(5000, [&] {
-		//	PLVPlayerPause(mediaPlayer, false);
-		//});
-		break;
-	case MEDIA_STATE_BEGIN_CACHE:
-		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-			Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("BeingCache")));
-		break;
-	case MEDIA_STATE_END_CACHE:
-		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-			Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("EndCache")));
-		break;
-	case MEDIA_STATE_BEGIN_SEEKING:
-		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-			Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("BeingSeeking")));
-		break;
-	case MEDIA_STATE_END_SEEKING:
-		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-			Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, QTStr("EndSeeking")));
-		break;
-	case MEDIA_STATE_LOADED:
-		if (!isLocal) {
-			rateCount = PLVPlayerGetRateCount(mediaPlayer);
+	connect(player, &Player::SignalProgress, this, [this, timeLabel](int millisecond) {
+		if (isEnd) {
+			return;
 		}
-		else {
-			rateCount = VIDEO_RATE_BD;
-		}
-		break;
-	case MEDIA_STATE_FAIL:
-		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-			Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("PlayerError")));
-		break;
-	case MEDIA_STATE_END:
-		Reset();
-		mapProp.clear();
-		emit SignalPropReset();
-		break;
-	}
-}
-void PlayerWidget::OnPlayerPropertyHandler(int property, int format, QString value)
-{	
-	switch (property)
-	{
-	case MEDIA_PROPERTY_DURATION:
-	{
-		mediaDuration = value.toInt();
-		mediaSlide->setMaximum(mediaDuration);
-		int seconds = mediaDuration / 1000;
+		mediaSlide->blockSignals(true);
+		mediaSlide->setValue(millisecond);
+		mediaSlide->blockSignals(false);
+		int seconds = millisecond / 1000;
 		int h = seconds / (60 * 60);
 		int m = (seconds % (60 * 60)) / 60;
-		duration = QTime(h, m, seconds % 60).toString("hh:mm:ss");
-		timeLabel->setText(QString("00:00:00/%1").arg(duration));
-		value = duration;
-	}
-		break;
-	default:
-		break;
-	}
-	mapProp[property] = MediaProp{ property, format, value };
-	emit SignalPropChange(property, value);
-}
-void PlayerWidget::OnPlayerRateChangeHandler(int inputBitRate, int realBitRate)
-{
-	(void)inputBitRate;
-	(void)realBitRate;
-}
-void PlayerWidget::OnPlayerProgressHandler(int millisecond)
-{
-	mediaSlide->blockSignals(true);
-	mediaSlide->setValue(millisecond);
-	mediaSlide->blockSignals(false);
-	int seconds = millisecond / 1000;
-	int h = seconds / (60 * 60);
-	int m = (seconds % (60 * 60)) / 60;
-	QString text = QTime(h, m, seconds % 60).toString("hh:mm:ss");
-	timeLabel->setText(QString("%1/%2").arg(text).arg(duration));
-	mapProp[MEDIA_PROPERTY_POSTION] = MediaProp{ MEDIA_PROPERTY_POSTION, MEDIA_FORMAT_STRING, text };
-	emit SignalPropChange(MEDIA_PROPERTY_POSTION, text);
-}
+		QString text = QTime(h, m, seconds % 60).toString("hh:mm:ss");
+		timeLabel->setText(QString("%1/%2").arg(text).arg(timeLabel->property("duration").toString()));
 
-bool PlayerWidget::LoadLocal(int opt, const SharedVideoPtr& video)
-{
-	if (1 == opt) {
-		if (!PLVPlayerIsLoaded(mediaPlayer)) {
-			QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
-				Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("MustFirstLoad")));
-			return false;
+		mapProperty[MEDIA_PROPERTY_POSTION] = MediaProperty{ MEDIA_PROPERTY_POSTION, MEDIA_FORMAT_STRING, text };
+		emit SignalPropChange(MEDIA_PROPERTY_POSTION, text);
+	});
+	connect(player, &Player::SignalProperty, this, [this, timeLabel](int property, int format, QString value) {
+		switch (property)
+		{
+		case MEDIA_PROPERTY_DURATION:
+		{
+			auto millisecond = value.toInt();
+			mediaSlide->setMaximum(millisecond);
+			int seconds = millisecond / 1000;
+			int h = seconds / (60 * 60);
+			int m = (seconds % (60 * 60)) / 60;
+			QString duration = QTime(h, m, seconds % 60).toString("hh:mm:ss");
+			timeLabel->setText(QString("00:00:00/%1").arg(duration));
+			timeLabel->setProperty("duration", duration);
+
+			value = duration;
 		}
-		PLVPlayerPause(mediaPlayer, false);
+		break;
+		case MEDIA_PROPERTY_CACHE_TIME:
+			mediaSlide->SetPreValue(value.toInt());
+			break;
+		default:
+			break;
+		}
+		mapProperty[property] = MediaProperty{ property, format, value };
+		emit SignalPropChange(property, value);
+	});
+	connect(player, &Player::SignalRateChange, this, [this](int inputBitRate, int realBitRate) {
+		SetRate(realBitRate, false);
+		if (inputBitRate != realBitRate && VIDEO_RATE_AUTO != inputBitRate) {
+			QString tip = QString(QTStr("RateChange")).arg(GetVideoName(inputBitRate)).arg(GetVideoName(realBitRate));
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+				Q_ARG(int, TipsWidget::TIP_INFO), Q_ARG(const QString&, tip));
+		}	
+	});
+	fullScreenTimer = new QTimer(this);
+	fullScreenTimer->setInterval(1000);
+	connect(fullScreenTimer, &QTimer::timeout, this, [this] {
+		if (!((QWidget*)filterObject)->isFullScreen()) {
+			if (time(NULL) - activeTime > 2) {
+				SetBarVisible(false);
+			}
+		}
+		else {
+			auto pos = QCursor::pos();
+			if (((QWidget*)filterObject)->geometry().contains(pos)) {
+				static QPoint spos = pos;
+				static QPoint szore(0, 0);
+				if (spos - pos != szore) {
+					spos = pos;
+					SetBarVisible(true);
+				}
+				else {
+					SetBarVisible(false);
+				}
+			}
+			else {
+				SetBarVisible(false);
+			}			
+		}		
+	});
+
+	volumePanel->installEventFilter(this);
+	volumeButton->installEventFilter(this);
+	this->installEventFilter(this);
+	if (parent) {
+		parent->installEventFilter(this);
+	}
+	SetFilter(GetRootParent(this));
+}
+PlayerControl::~PlayerControl(void)
+{
+	if (paramDialog) {
+		paramDialog->close();
+		paramDialog = nullptr;
+	}
+}
+
+void PlayerControl::SetFilter(const QObject* object)
+{
+	if (filterObject) {
+		filterObject->removeEventFilter(this);
+	}
+	filterObject = const_cast<QObject*>(object);
+	filterObject->installEventFilter(this);
+}
+void PlayerControl::UpdatePos()
+{
+	QWidget* widget = (QWidget*)this->parent();
+	if (widget && widget->isVisible()) {
+		this->resize(widget->size());
+		this->move(widget->mapToGlobal(QPoint(0, 0)));
+	}
+}
+void PlayerControl::OpenParamWindow()
+{
+	if (!paramDialog) {
+		paramDialog = new ParamDialog(this);		
+#ifdef _WIN32
+		HWND hwnd = (HWND)paramDialog->winId();
+		auto oldStyle = ::GetWindowLongW(hwnd, GWL_EXSTYLE);
+		const DWORD newWindowStyle = oldStyle | WS_EX_APPWINDOW;
+		::SetWindowLongW(hwnd, GWL_EXSTYLE, static_cast<LONG_PTR>(newWindowStyle));
+#else
+		Qt::WindowFlags f = paramDialog->windowFlags();
+		f |= Qt::WindowStaysOnTopHint;
+		paramDialog->setWindowFlags(f);
+#endif // !_WIN32		
+		paramDialog->setAttribute(Qt::WA_DeleteOnClose, true);
+		connect(paramDialog, &ParamDialog::finished, this, [&](int) {
+			paramDialog = nullptr;
+		});
+		connect(this, SIGNAL(SignalPropChange(int, const QString&)),
+			paramDialog, SLOT(OnPropChange(int, const QString&)));
+		connect(this, SIGNAL(SignalPropReset()),
+			paramDialog, SLOT(OnPropReset()));
+		for (auto& it : mapProperty) {
+			paramDialog->SetPropValue(it.property, it.value);
+		}
+		paramDialog->show();
+		if (filterObject && parent() && !((QWidget*)parent())->isVisible()) {
+			auto screen = ((QWidget*)filterObject)->geometry();
+			QRect rc = paramDialog->geometry();
+			paramDialog->move(screen.left() + (screen.width() - rc.width()) / 2,
+				screen.top() + (screen.height() - rc.height()) / 2);
+		}
 	}
 	else {
-		PLVPlayerSetVideo(mediaPlayer, video->vid.c_str(), video->filePath.c_str(), VIDEO_RATE_AUTO);
-		PLVPlayerLoadLocal(mediaPlayer, 0);
+		paramDialog->showNormal();
 	}
-	UpdatePanel(video->rate, video);
-	return true;
-}
-void PlayerWidget::UpdateOSD(void)
-{
-	auto & osd = SettingDialog::GetOSDConfig();
-	if (!osd.enable) {
-		PLVPlayerSetOSDConfig(mediaPlayer, false, nullptr);
-		return;
+	paramDialog->activateWindow();
+	paramDialog->raise();
+	if (curVideo) {
+		paramDialog->SetVideoName(QString::fromStdString(curVideo->title));
 	}
-	OSDConfigInfo config;
-	config.animationEffect = (OSD_DISPLAY_TYPE)osd.animationEffect;
-	config.border = osd.border;
-	config.borderAlpha = osd.borderAlpha;
-	std::string borderColor = QT_TO_UTF8(osd.borderColor);
-	config.borderColor = borderColor.c_str();
-	config.borderWidth = osd.borderWidth;
-	config.displayDuration = osd.displayDuration;
-	config.displayInterval = osd.displayInterval;
-	config.fadeDuration = osd.fadeDuration;
-	std::string text = QT_TO_UTF8(osd.text);
-	config.text = text.c_str();
-	config.textAlpha = osd.textAlpha;
-	std::string textColor = QT_TO_UTF8(osd.textColor);
-	config.textColor = textColor.c_str();
-	config.textSize = osd.textSize;
-	PLVPlayerSetOSDConfig(mediaPlayer, true, &config);
 }
 
-void PlayerWidget::UpdateCache(void)
+void PlayerControl::SetInfo(bool local, int rate, const SharedVideoPtr& video)
 {
-	auto & cache = SettingDialog::GetCacheConfig();
-	if (!cache.change) {
-		return;
-	}
-	cache.change = false;
-	if (!cache.enable) {
-		PLVPlayerSetCacheConfig(mediaPlayer, false, 0, 0);
-		return;
-	}
-	PLVPlayerSetCacheConfig(mediaPlayer, true, cache.maxCacheBytes, cache.maxCacheSeconds);
+	//Reset();
+	isLocalPlay = local;
+	curRate = rate;
+	curVideo = video;
+	SetRate(rate, false);
+	player->SetVolume(volumePanel->GetValue());
+	player->SetMute(volumeButton->isChecked());
+	player->SetSpeed(curSpeed);
+}
+void PlayerControl::Reset()
+{
+	volumeButton->setChecked(false);
+	mediaSlide->blockSignals(true);
+	mediaSlide->setValue(0);
+	mediaSlide->SetPreValue(0);
+	mediaSlide->blockSignals(false);
+	findChild<QPushButton*>("playButton")->setChecked(false);
+	findChild<QLabel*>("timeLabel")->setText("00:00:00/00:00:00");
+	findChild<QLabel*>("timeLabel")->setProperty("duration", "00:00:00");
 }
 
-void PlayerWidget::OnPlayerAudioDeviceHandler(int audioDeviceCount)
-{
-    if (audioDeviceCount > 0) {
-        if (!hasAudioPlayDevice) {
-            PLVPlayerReloadAudio(mediaPlayer);
-        }
-        hasAudioPlayDevice = true;
-    }
-    else {
-        hasAudioPlayDevice = false;
-    }
-}
-
-void PlayerWidget::SetMainWindow(QWidget* win)
-{
-	mainWindow = win;
-	mainWindow->installEventFilter(this);
-}
-
-bool PlayerWidget::Play(bool local, const QString& token, const SharedVideoPtr& video, int seekMillisecond)
-{
-	int ret = PLVPlayerSetVideo(mediaPlayer, video->vid.c_str(), video->filePath.c_str(), video->rate);
-	if (E_NO_ERR != ret) {
-		slog_error("[sdk]:set player info error:%d", ret);
-		return false;
-	}
-	UpdateOSD();
-	isLocal = local;
-	if (local) {
-		ret = PLVPlayerPlayLocal(mediaPlayer, seekMillisecond);
-	}
-	else {
-		ret = PLVPlayerPlay(mediaPlayer, QT_TO_UTF8(token), seekMillisecond, false);
-	}
-	if (E_NO_ERR != ret) {
-		slog_error("[sdk]:play %s error:%d", (local ? "local" : "online"), ret);
-		return false;
-	}
-	UpdatePanel(video->rate, video);
-	return true;
-}
-
-bool PlayerWidget::RePlay(int rate, int seekMillisecond, const QString& token, const SharedVideoPtr& video)
-{
-	int ret = PLVPlayerSetVideo(mediaPlayer, video->vid.c_str(), video->filePath.c_str(), rate);
-	if (E_NO_ERR != ret) {
-		slog_error("[sdk]:set player info error:%d", ret);
-		return false;
-	}
-	UpdateOSD();
-	ret = PLVPlayerPlay(mediaPlayer, QT_TO_UTF8(token), seekMillisecond, false);
-	if (E_NO_ERR != ret) {
-		slog_error("[sdk]:play online error:%d", ret);
-		return false;
-	}
-	UpdatePanel(rate, video);
-	return true;
-}
-
-void PlayerWidget::Stop(void)
-{
-	videoInfo = nullptr;
-	PLVPlayerStop(mediaPlayer);
-	isShowControl = false;
-	UpdateControlPanel(false, false);
-	Reset();
-}
-void PlayerWidget::Destroy(void)
-{
-	PLVPlayerResetHandler(mediaPlayer);
-	Stop();
-	//PLVPlayerDestroy(mediaPlayer);
-	//mediaPlayer = NULL;
-}
-
-bool PlayerWidget::eventFilter(QObject* obj, QEvent *e)
+bool PlayerControl::eventFilter(QObject* obj, QEvent* e)
 {
 	do
 	{
-		if (QEvent::Enter == e->type() && this == obj) {
-			SetPanelVisible(true);
-		}
-		else if (QEvent::MouseButtonDblClick == e->type() && this == obj) {
-			QMouseEvent *me = (QMouseEvent*)e;
-			if (Qt::LeftButton == me->button()) {
-				fullButton->click();
+		if (this == obj || parent() == obj) {
+			if (QEvent::Enter == e->type()) {
+				shotButton->setVisible(true);
 			}
-		}
-		else if (QEvent::MouseButtonRelease == e->type() && this == obj) {
-			QMouseEvent *me = (QMouseEvent*)e;
+			else if (QEvent::Leave == e->type()) {
+			shotPanelHideTimer->start();
+			}
+			else if (QEvent::MouseButtonDblClick == e->type()) {
+			QMouseEvent* me = (QMouseEvent*)e;
+			if (Qt::LeftButton == me->button()) {
+				findChild<QPushButton*>("fullButton")->click();
+			}
+			}
+			else if (QEvent::MouseButtonRelease == e->type()) {
+			QMouseEvent* me = (QMouseEvent*)e;
 			if (Qt::RightButton == me->button()) {
 				QPointer<QMenu> popup = new QMenu(this);
-				auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, int type) {
-					QAction *item = new QAction(name, this);
+				auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, const std::function<void()>& fun) {
+					QAction* item = new QAction(name, this);
 					popup->addAction(item);
-					connect(item, &QAction::triggered, [this, type](bool pause) {
-						switch (type)
-						{
-						case 1:
-							startButton->click();
-							break;
-						case 2:
-							stopButton->click();
-							break;
-						case 3:
-							QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "on_paramButton_clicked");
-							break;
-						case 4:
-							fullButton->click();
-							break;
-						}						
-					});
+					connect(item, &QAction::triggered, this, fun);
 				};
-				AddAction(popup, startButton->isChecked() ? QTStr("Pause") : QTStr("Play"), 1);
-				AddAction(popup, QTStr("Stop"), 2);
+				AddAction(popup, findChild<QPushButton*>("playButton")->isChecked() ? QTStr("Pause") : QTStr("Play"), [this] {
+					findChild<QPushButton*>("playButton")->click(); });
+				AddAction(popup, QTStr("Stop"), [&] {
+					findChild<QPushButton*>("stopButton")->click(); });
 				popup->addSeparator();
-				AddAction(popup, QTStr("OpenListParam"), 3);
-				AddAction(popup, fullButton->isChecked() ? QTStr("ExitFullScreen") : QTStr("FullScreen"), 4);
+				AddAction(popup, QTStr("OpenListParam"), [this] {
+					OpenParamWindow();
+					//QMetaObject::invokeMethod((QWidget*)filterObject, "OnOpenParamWindow", Q_ARG(QString, QString::fromStdString(curVideo->vid)));
+				});
+				AddAction(popup, findChild<QPushButton*>("fullButton")->isChecked() ? QTStr("ExitFullScreen") : QTStr("FullScreen"), [&] {
+					findChild<QPushButton*>("fullButton")->click(); });
 				popup->exec(QCursor::pos());
 			}
+			}
 		}
-		else if (QEvent::Leave == e->type() && this == obj) {
-			hideTimer->start();
+		else if (volumePanel == obj) {
+		if (QEvent::Enter == e->type()) {
+			volumePanelHideTimer->stop();
 		}
-		else if (QEvent::Enter == e->type() && volumePanel == obj) {
-			volumeHideTimer->stop();
+		else if (QEvent::Leave == e->type()) {
+			volumePanelHideTimer->start();
 		}
-		else if (QEvent::Leave == e->type() && volumePanel == obj) {
-			volumeHideTimer->start();
 		}
-		else if (QEvent::Leave == e->type() && volumeButton == obj) {
-			volumeHideTimer->start();
-		}
-		else if (QEvent::Enter == e->type() && volumeButton == obj) {
+		else if (volumeButton == obj) {
+		if (QEvent::Enter == e->type()) {
 			if (!volumeButton->isEnabled()) {
 				break;
 			}
+			volumePanelHideTimer->stop();
 			QPoint ptY = mediaSlide->mapToGlobal(QPoint(0, 0));
 			QPoint ptShow = volumeButton->mapToGlobal(QPoint(volumeButton->width() >> 1, 0));
 			volumePanel->show();
@@ -682,101 +592,278 @@ bool PlayerWidget::eventFilter(QObject* obj, QEvent *e)
 			ptShow.setY(ptY.y() - volumePanel->height());
 			volumePanel->move(ptShow);
 		}
+		else if (QEvent::Leave == e->type()) {
+			volumePanelHideTimer->start();
+		}
+		}
 	} while (false);
-
 	do
 	{
-		//if (obj == this && QEvent::Show == e->type()) {
-		//	UpdateControlPanel(true, true);
-		//}
-		if (!(obj == mainWindow || obj == this)) {
+		if (!(this == obj || filterObject == obj || this->parent() == obj)) {
 			break;
 		}
 		switch (e->type())
 		{
 		case QEvent::Hide:
-			controlWidget->setVisible(false);
+			SetVisible(false);
 			break;
 		case QEvent::Show:
-		case QEvent::WindowStateChange:
-			UpdateControlPanel(false, false);
+			SetVisible(true);
 			break;
 		case QEvent::Move:
 		case QEvent::Resize:
-			UpdateControlPanel(true, true);
+			if (this != obj) {
+				UpdatePos();
+			}
+			break;
+		case QEvent::WindowActivate:
+			UpdatePos();
+			break;
+		case QEvent::WindowStateChange:
+			if (this->nativeParentWidget() &&
+				Qt::WindowMinimized == (this->nativeParentWidget()->windowState() & Qt::WindowMinimized)) {
+				SetVisible(false);
+			}
+			break;
+		case QEvent::Enter:
+			//case QEvent::HoverMove:
+				//if (filterObject && ((QWidget*)filterObject)->isFullScreen()) {
+				//	activeTime = time(NULL);
+				//	setVisible(true);
+				//	UpdatePos();
+				//}
+			if (!((QWidget*)filterObject)->isFullScreen()){
+				fullScreenTimer->stop();
+			}
+			else {
+				fullScreenTimer->start(1000);
+			}
+			SetBarVisible(true);
+			break;
+		case QEvent::Leave:
+		//case QEvent::HoverLeave:
+			activeTime = time(NULL);
+			fullScreenTimer->start(1000);
+			break;
+		case QEvent::KeyRelease: {
+			QKeyEvent* key = (QKeyEvent*)e;
+			if (Qt::Key_Escape == key->key() && filterObject && ((QWidget*)filterObject)->isFullScreen()) {
+				findChild<QPushButton*>("fullButton")->click();
+			}
+		}
 			break;
 		}
 	} while (false);
-	return QWidget::eventFilter(obj, e);
+	return QStackedWidget::eventFilter(obj, e);
 }
 
-void PlayerWidget::SetPanelVisible(bool visible)
+void PlayerControl::SetRate(int rate, bool notify)
 {
-	rightWidget->setVisible(visible);
-}
-
-void PlayerWidget::UpdatePanel(int rate, const SharedVideoPtr& video)
-{
-	Reset();
-	startButton->setChecked(true);
-	curRate = rate;
-	videoButton->setText(GetVideoName(curRate));
-	videoInfo = video;
-	PLVPlayerSetVolume(mediaPlayer, volumePanel->GetValue());
-	PLVPlayerSetMute(mediaPlayer, volumeButton->isChecked());
-	PLVPlayerSetSpeed(mediaPlayer, curSpeed);
-	isShowControl = true;
-	if (!showControlTimer) {
-		showControlTimer = new QTimer(this);
-		connect(showControlTimer, &QTimer::timeout, [&] {
-			showControlTimer->stop();
-			UpdateControlPanel(true, true);
-			//Test();
-		});
-	}
-	showControlTimer->start(50);
-}
-
-void PlayerWidget::UpdateControlPanel(bool move, bool resize)
-{
-	if (mainWindow) {
-		auto state = mainWindow->windowState();
-		if (Qt::WindowMinimized == (Qt::WindowMinimized & state)) {
-			controlWidget->setVisible(false);
-			return;
-		}
-	}
-	controlWidget->setVisible(isShowPlayer && isShowControl);
-	if (!controlWidget->isVisible()) {
+	findChild<QPushButton*>("videoButton")->setText(GetVideoName(rate));
+	if (rate == curRate) {
 		return;
 	}
-	if (move) {
-		auto itemPos = this->mapToGlobal(QPoint(0, 0));
-		controlWidget->move(itemPos.x(), itemPos.y());
+	curRate = rate;
+	if (!notify) {
+		return;
 	}
-	if (resize) {
-		controlWidget->setFixedSize(this->width(), this->height());
+	int pos = mediaSlide->value();
+	if (isLocalPlay) {
+		if (curVideo && SdkManager::GetManager()->CheckFileComplete(
+			QString::fromStdString(curVideo->vid), QString::fromStdString(curVideo->filePath), rate)) {
+			int ret = player->SetVideo(QString::fromStdString(curVideo->vid),
+				QString::fromStdString(curVideo->filePath), rate);
+			if (E_NO_ERR != ret) {
+				slog_error("[sdk]:set player info error:%d", ret);
+				QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+					Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("PlayerError")));
+				Reset();
+				return;
+			}
+			ret = player->PlayLocal(pos);
+			if (E_NO_ERR != ret) {
+				slog_error("[sdk]:play local error:%d", ret);
+				QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+					Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("PlayerError")));
+				Reset();
+				return;
+			}
+			curRate = rate;			
+		}
+		else {
+			QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
+				Q_ARG(int, TipsWidget::TIP_ERROR), Q_ARG(const QString&, QTStr("NoDownloadVideo")));
+		}
+	}
+	else {
+		QMetaObject::invokeMethod((QWidget*)filterObject, "OnChangeRatePlayVideo", Qt::QueuedConnection,
+			Q_ARG(int, rate), Q_ARG(int, pos), Q_ARG(const SharedVideoPtr&, curVideo));
 	}
 }
 
-void PlayerWidget::Reset(void)
+void PlayerControl::SetSpeed(double speed)
 {
-	startButton->setChecked(false);
-	volumeButton->setChecked(false);
-	mediaSlide->blockSignals(true);
-	mediaSlide->setValue(0);
-	mediaSlide->blockSignals(false);
-	if (!PLVPlayerIsLoaded(mediaPlayer)) {
-		mediaDuration = 0;
-		duration = "00:00:00";
-		timeLabel->setText(duration);
-	}
+	findChild<QPushButton*>("speedButton")->setText(GetSpeedName(speed));
+	curSpeed = speed;
+	player->SetSpeed(speed);
+}
+void PlayerControl::SetVisible(bool visible)
+{
+	do
+	{
+		if (!visible) {
+			setVisible(visible);
+			break;
+		}
+		if (parent() && !((QWidget*)parent())->isVisible()) {
+			break;
+		}
+		if (this->nativeParentWidget() &&
+			Qt::WindowMinimized == (this->nativeParentWidget()->windowState() & Qt::WindowMinimized)) {
+			break;
+		}
+		setVisible(visible);
+		UpdatePos();
+	} while (false);
 }
 
-void PlayerWidget::Test(void)
+void PlayerControl::SetBarVisible(bool visible)
 {
-	QVariantList debug;
-	debug << PLVPlayerIsLoaded(mediaPlayer) << PLVPlayerIsMute(mediaPlayer) << PLVPlayerIsPause(mediaPlayer) << PLVPlayerGetSpeed(mediaPlayer)
-		<< PLVPlayerGetVolume(mediaPlayer) << PLVPlayerGetDuration(mediaPlayer) << PLVPlayerGetCurrentRate(mediaPlayer);
-	qDebug() << debug;
+	do
+	{
+		if (!visible) {
+			barWidget->setVisible(visible);
+			break;
+		}
+		if (parent() && !((QWidget*)parent())->isVisible()) {
+			break;
+		}
+		barWidget->setVisible(visible);
+	} while (false);
+}
+
+
+///////////////////////////////////////////////////////
+PlayerWidget::PlayerWidget(QWidget* parent)
+	: QWidget(parent)
+{	
+	setAttribute(Qt::WA_NativeWindow);
+	setAttribute(Qt::WA_DontCreateNativeAncestors);
+	//setAttribute(Qt::WA_PaintOnScreen);
+	//setAttribute(Qt::WA_StaticContents);
+	//setAttribute(Qt::WA_NoSystemBackground);
+	//setAttribute(Qt::WA_OpaquePaintEvent);
+	player = new Player((void*)this->winId(), this);
+	controller = new PlayerControl(player, this);
+	controller->setObjectName("control");
+	
+	QVBoxLayout* layout = new QVBoxLayout();
+	layout->setSpacing(0);
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->addWidget(controller);
+	setLayout(layout);
+}
+
+PlayerWidget::~PlayerWidget(void)
+{
+	delete player;
+	player = nullptr;
+	qDebug() << __FUNCTION__;
+}
+
+void PlayerWidget::SetFilter(const QObject* object)
+{
+	controller->SetFilter(object);
+}
+QObject* PlayerWidget::GetFilter()
+{
+	return controller->GetFilter();
+}
+void PlayerWidget::UpdatePos()
+{
+	controller->UpdatePos();
+}
+
+bool PlayerWidget::Play(bool local, const QString& token, const SharedVideoPtr& video, int rate, int seekMillisecond)
+{
+	return StartPlay(local, rate, token, video, seekMillisecond);
+}
+
+bool PlayerWidget::OnlineRePlay(int rate, int seekMillisecond, const QString& token, const SharedVideoPtr& video)
+{
+	return StartPlay(false, rate, token, video, seekMillisecond);
+}
+
+bool PlayerWidget::LoadLocal(const SharedVideoPtr& video)
+{
+	SetVideo(true, VIDEO_RATE_AUTO, video);
+	player->LoadLocal(0);
+	return true;
+}
+
+void PlayerWidget::RefreshPlayer()
+{
+	player->UpdateCacheConfig();
+	player->UpdateOSDConfig();
+	player->UpdateLogoConfig();
+}
+
+void PlayerWidget::OpenParamWindow()
+{
+	controller->OpenParamWindow();
+}
+
+void PlayerWidget::Stop(void)
+{
+	player->Stop();
+}
+void PlayerWidget::Destroy(void)
+{
+	player->disconnect();
+	player->Reset();
+	Stop();
+}
+
+void PlayerWidget::paintEvent(QPaintEvent* e)
+{
+	(void)e;
+	QPainter p(this);
+	p.setPen(Qt::NoPen);
+	p.setBrush(QColor(12, 12, 12));
+	p.drawRect(rect());
+}
+void PlayerWidget::closeEvent(QCloseEvent* e)
+{
+	Destroy();
+	QWidget::closeEvent(e);
+}
+
+bool PlayerWidget::SetVideo(bool local, int rate, const SharedVideoPtr& video)
+{
+	int ret = player->SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
+	if (E_NO_ERR != ret) {
+		slog_error("[sdk]:set player info error:%d", ret);
+		return false;
+	}
+	controller->SetInfo(local, rate, video);
+	return true;
+}
+
+bool PlayerWidget::StartPlay(bool local, int rate, const QString& token, const SharedVideoPtr& video, int seekMillisecond)
+{
+	if (!SetVideo(local, rate, video)) {
+		return false;
+	}
+	int ret = 0;
+	if (local) {
+		ret = player->PlayLocal(seekMillisecond);
+	}
+	else {
+		ret = player->Play(token, seekMillisecond, false);
+	}
+	if (E_NO_ERR != ret) {
+		slog_error("[sdk]:play %s error:%d", (local ? "local" : "online"), ret);
+		return false;
+	}
+	return true;
 }

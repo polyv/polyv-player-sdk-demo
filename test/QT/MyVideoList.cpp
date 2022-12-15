@@ -32,16 +32,43 @@ MyVideoList::MyVideoList(QObject* parent)
 MyVideoList::~MyVideoList(void)
 {
 	//HttpManager::CloseManager();
-	{
-		std::lock_guard<std::mutex> l(lock);
-		vids.clear();
-	}
-	isExit = true;
 	
-	requestHttp->join();
-	delete requestHttp;
+}
 
-	VideoInfo::StopDownloadThread();
+
+class QuickThread : public QThread
+{
+public:
+	explicit inline QuickThread(std::function<void()> _func)
+		: func(_func)
+	{
+	}
+private:
+	virtual void run() override
+	{
+		func();
+	}
+	std::function<void()> func;
+};
+
+QThread* CreateQThread(std::function<void()> func)
+{
+	return new QuickThread(func);
+}
+
+QString MyVideoList::GetTokenSafeBlock(MyVideoList* object, const QString& vid)
+{
+	QString token;
+	QEventLoop eventLoop;
+	auto wait = [&]() {
+		token = object->GetToken(vid);
+		QMetaObject::invokeMethod(&eventLoop, "quit", Qt::QueuedConnection);
+	};
+	QScopedPointer<QThread> thread(new QuickThread(wait));
+	thread->start();
+	eventLoop.exec();
+	thread->wait();
+	return token;
 }
 
 void MyVideoList::RequestAll(void)
@@ -54,6 +81,20 @@ void MyVideoList::RequestVid(const QString& vid)
 {
 	std::lock_guard<std::mutex> l(lock);
 	vids.push_back(Item{ 1, 1, vid });
+}
+void MyVideoList::Stop()
+{
+
+	{
+		std::lock_guard<std::mutex> l(lock);
+		vids.clear();
+	}
+	isExit = true;
+
+	requestHttp->join();
+	delete requestHttp;
+
+	VideoInfo::StopDownloadThread();
 }
 
 QString MyVideoList::GetToken(const QString& vid)
@@ -228,8 +269,9 @@ void MyVideoList::ParseResult(bool result, int page, int count, const QString& d
 	}*/
 	int code = 0;
 	int pageSize = 0;
-	std::vector<SharedVideoPtr> items;
+	std::list<SharedVideoPtr> items;
 	std::string json = QT_TO_UTF8(data);
+	qDebug() << json.c_str();
 	do
 	{
 		if (!result) {
@@ -270,9 +312,14 @@ void MyVideoList::ParseResult(bool result, int page, int count, const QString& d
 			video->title = QT_TO_UTF8(item["title"].toString());
 			video->duration = QT_TO_UTF8(item["duration"].toString());
 			video->seed = item["seed"].toInt();
-			video->rateCount = item["df_num"].toInt();
-			video->size = item["source_filesize"].toInt();
-			items.push_back(video);
+			video->rateCount = item["df"].toInt();
+			video->size = (long long)item["source_filesize"].toDouble();
+			auto arr = item["filesize"].toArray();
+			auto count = arr.size();
+			for (int j = 0; j < count; ++j) {
+				video->sizes.push_back((long long)arr.at(j).toDouble());
+			}
+			items.push_front(video);
 		}
 		result = true;
 	} while (false);
@@ -285,7 +332,7 @@ void MyVideoList::ParseResult(bool result, int page, int count, const QString& d
 		return;
 	}
 	if (items.empty()) {
-		if (pageSize == count) {
+		if (pageSize == count && 1 != count) {
 			std::lock_guard<std::mutex> l(lock);
 			vids.push_back(Item{ page + 1, 10, QString() });
 			return;

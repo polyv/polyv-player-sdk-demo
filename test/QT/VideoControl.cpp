@@ -8,6 +8,7 @@
 #include <QVBoxLayout>
 #include <QFileInfo>
 #include <QUrl>
+#include <QClipboard>
 #include <QDesktopServices>
 
 #include <http/http-client.h>
@@ -21,6 +22,8 @@
 #include "StatusButton.h"
 #include "Application.h"
 #include "WidgetHelper.h"
+#include "TipsWidget.h"
+#include "MsgBoxDialog.h"
 
 DownloadManager::DownloadManager(void)
 {
@@ -33,7 +36,9 @@ void DownloadManager::Start(void)
 	}
 	isExit = false;
 	download = new std::thread(&DownloadManager::Run, this);
-	download->joinable();
+	if (download->joinable()) {
+
+	}
 }
 void DownloadManager::Stop(void)
 {
@@ -51,7 +56,7 @@ void DownloadManager::Stop(void)
 	}
 }
 
-int DownloadManager::AppendTask(const SharedVideoPtr& video, 
+int DownloadManager::AppendTask(int rate, const SharedVideoPtr& video,
 	const std::string& url, const std::string& filename)
 {
 	if (isExit) {
@@ -60,7 +65,7 @@ int DownloadManager::AppendTask(const SharedVideoPtr& video,
 	static int s_taskId = 0;
 	std::lock_guard<std::mutex> l(mutex);
 	int taskId = ++s_taskId;
-	queueTask.push(Item(taskId, url, filename, video));
+	queueTask.push(Item(taskId, rate, url, filename, video));
 	return taskId;
 }
 
@@ -92,10 +97,10 @@ void DownloadManager::Run()
 		if (!client.Request(result)) {
 			slog_error("file open error,file:%s,url:%s",
 				item.filename.c_str(), item.url.c_str());
-			item.video->DownloadImageResult(item.taskId, false);
+			item.video->DownloadImageResult(item.taskId, false, item.rate);
 		}
 		else {
-			item.video->DownloadImageResult(item.taskId, true);
+			item.video->DownloadImageResult(item.taskId, true, item.rate);
 		}
 		std::this_thread::sleep_for(std::chrono::milliseconds(200));
 	}
@@ -134,7 +139,7 @@ void VideoInfo::StopDownloadThread(void)
 	downloadImage = nullptr;
 }
 
-bool VideoInfo::SetTitle(const std::string& title, bool signal/* = true*/) 
+bool VideoInfo::SetTitle(const std::string& title, int rate, bool signal/* = true*/)
 {
 	if (this->title == title) {
 		return false;
@@ -143,21 +148,21 @@ bool VideoInfo::SetTitle(const std::string& title, bool signal/* = true*/)
 	if (!signal) {
 		return true;
 	}
-	emit SignalAttributeChanged(ATTR_VIDEO_TITLE, shared_from_this());
+	emit SignalAttributeChanged(ATTR_VIDEO_TITLE, shared_from_this(), rate);
 	return true;
 }
-bool VideoInfo::SetImage(const std::string& url)
+bool VideoInfo::SetImage(const std::string& url, int rate)
 {
 	if (this->imageUrl == url && !this->imageFile.empty()) {
 		return false;
 	}
 	if (std::string::npos != url.find("http")) {
 		this->imageUrl = url;
-		DownloadImage();
+		DownloadImage(rate);
 	}
 	return true;
 }
-bool VideoInfo::SetDownloadStatus(int status, bool signal/* = true*/)
+bool VideoInfo::SetDownloadStatus(int status, int rate, bool signal/* = true*/)
 {
 	//if (this->downloadStatus == status) {
 	//	return false;
@@ -166,11 +171,11 @@ bool VideoInfo::SetDownloadStatus(int status, bool signal/* = true*/)
 	if (!signal) {
 		return true;
 	}
-	emit SignalAttributeChanged(ATTR_VIDEO_DOWNLOAD_STATUS, shared_from_this());
+	emit SignalAttributeChanged(ATTR_VIDEO_DOWNLOAD_STATUS, shared_from_this(), rate);
 	return true;
 }
 
-void VideoInfo::DownloadImage(void)
+void VideoInfo::DownloadImage(int rate)
 {
 	//if (std::string::npos == imageUrl.find("http")) {
 	//	return; 
@@ -179,7 +184,7 @@ void VideoInfo::DownloadImage(void)
 	QString fileName = QString("%1/%2").arg(App()->GetImagePath()).arg(fileInfo.fileName());
 	if (QFile::exists(fileName)) {
 		this->imageFile = QT_TO_UTF8(fileName);
-		emit SignalAttributeChanged(ATTR_VIDEO_IMAGE, shared_from_this());
+		emit SignalAttributeChanged(ATTR_VIDEO_IMAGE, shared_from_this(), rate);
 		return;
 	}
 	if (0 != taskId) {
@@ -187,7 +192,7 @@ void VideoInfo::DownloadImage(void)
 	}
 	filename = QT_TO_UTF8(fileName);
 	if (downloadImage) {
-		taskId = downloadImage->AppendTask(shared_from_this(), imageUrl, filename);
+		taskId = downloadImage->AppendTask(rate, shared_from_this(), imageUrl, filename);
 	}
 	//if (isExitDownload) {
 	//	return;
@@ -232,7 +237,7 @@ void VideoInfo::DownloadImage(void)
 	//}, this);
 }
 
-void VideoInfo::DownloadImageResult(int taskId, bool result)
+void VideoInfo::DownloadImageResult(int taskId, bool result, int rate)
 {
 	if (this->taskId != taskId) {
 		return;
@@ -243,7 +248,7 @@ void VideoInfo::DownloadImageResult(int taskId, bool result)
 		return;
 	}
 	this->imageFile = filename;
-	emit SignalAttributeChanged(ATTR_VIDEO_IMAGE, shared_from_this());
+	emit SignalAttributeChanged(ATTR_VIDEO_IMAGE, shared_from_this(), rate);
 }
 
 //void VideoInfo::ExitDownload(void)
@@ -256,18 +261,20 @@ void VideoInfo::DownloadImageResult(int taskId, bool result)
 //	download = nullptr;
 //}
 
-void VideoInfo::OnDownloadImage(std::string fileName)
+void VideoInfo::OnDownloadImage(std::string fileName, int rate)
 {
 	//imageTaskId = std::thread::id();
 	this->imageFile = fileName;
-	emit SignalAttributeChanged(ATTR_VIDEO_IMAGE, shared_from_this());
+	emit SignalAttributeChanged(ATTR_VIDEO_IMAGE, shared_from_this(), rate);
 }
 
 ////////////////////////////////////////////////
-VideoCoverWidget::VideoCoverWidget(QWidget* parent, bool local, const SharedVideoPtr& video)
+const QSize kCoverImageSize = QSize(80, 45);
+VideoCoverWidget::VideoCoverWidget(QWidget* parent, bool local, const SharedVideoPtr& video, int rate)
 	: QWidget(parent)
 	, localPlay(local)
 	, videoInfo(video)
+	, curRate(rate)
 {
 	QStackedLayout* layout = new QStackedLayout();
 	layout->setSpacing(0);
@@ -288,9 +295,9 @@ VideoCoverWidget::VideoCoverWidget(QWidget* parent, bool local, const SharedVide
 	layout->addWidget(page2);
 	QPushButton* playButton = new StatusButton(page2, "playButton",
 		localPlay ? QTStr("LocalPlay") : QTStr("OnlinePlay"), QSize(24, 24));
-	connect(playButton, &QPushButton::clicked, [&] {
+	connect(playButton, &QPushButton::clicked, this, [this] {
 		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), 
-			"OnPlayVideo", Q_ARG(bool, localPlay), Q_ARG(const SharedVideoPtr&, videoInfo));
+			"OnPlayVideo", Q_ARG(bool, localPlay), Q_ARG(const SharedVideoPtr&, videoInfo), Q_ARG(int, curRate));
 	});
 	((QHBoxLayout*)page2->layout())->addWidget(playButton, 0, Qt::AlignCenter);
 
@@ -298,24 +305,29 @@ VideoCoverWidget::VideoCoverWidget(QWidget* parent, bool local, const SharedVide
 	layout->addWidget(page1);
 	imageLabel = new QLabel(page1);
 	imageLabel->setObjectName("imageLabel");
-	imageLabel->setFixedSize(QSize(80, 45));
+	imageLabel->setFixedSize(kCoverImageSize);
 	((QHBoxLayout*)page1->layout())->addWidget(imageLabel, 0, Qt::AlignCenter);
 
-	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&)),
-		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&)), Qt::QueuedConnection);
+	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&, int)),
+		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&, int)), Qt::QueuedConnection);
 
 	if (QFile::exists(QT_UTF8(video->imageFile.c_str()))) {
-		OnAttributeChanged(ATTR_VIDEO_IMAGE, video);
+		OnAttributeChanged(ATTR_VIDEO_IMAGE, video, video->rate);
 	}
 }
 
-void VideoCoverWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video)
+void VideoCoverWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate)
 {
+	(void)rate;
 	if (ATTR_VIDEO_IMAGE != attribute) {
 		return;
 	}
-	imageLabel->setPixmap(QPixmap::fromImage(QImage(QT_UTF8(video->imageFile.c_str()))).
-		scaled(80, 45, Qt::KeepAspectRatio));
+	auto pixmap = QPixmap::fromImage(QImage(QT_UTF8(video->imageFile.c_str()))).
+		scaled(kCoverImageSize.width(), kCoverImageSize.height(), Qt::KeepAspectRatio);
+	if (!pixmap.isNull()) {
+		SetControlSheet(imageLabel, "style", "image"); 
+		imageLabel->setPixmap(pixmap);
+	}
 }
 
 ////////////////////////////////////////////////
@@ -330,34 +342,46 @@ VideoTitleWidget::VideoTitleWidget(QWidget* parent, bool showVID, const SharedVi
 	textLabel = new QLabel(this);
 	textLabel->setObjectName("textLabel");
 	textLabel->setText(QT_UTF8(video->title.c_str()));
-	
 	if (showVID) {
-		textLabel->setAlignment(Qt::AlignLeft | Qt::AlignBottom);
-		layout->addWidget(textLabel, 1, Qt::AlignLeft | Qt::AlignBottom);
-
+		layout->addStretch(1);
+		layout->addWidget(textLabel, 1);
+		auto hlayout = new QHBoxLayout();
+		hlayout->setSpacing(6);
+		hlayout->setContentsMargins(0, 0, 0, 0);
 		vidLabel = new QLabel(this);
 		vidLabel->setObjectName("vidLabel");
-		vidLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-		layout->addWidget(vidLabel, 1, Qt::AlignLeft | Qt::AlignTop);
-		vidLabel->setText(QT_UTF8(video->vid.c_str()));
+		QString vid = QT_UTF8(video->vid.c_str());
+		vidLabel->setText(vid);
+		hlayout->addWidget(vidLabel);
+		auto copy = new StatusButton(this, "copy", QTStr("CopyVid"), QSize(16, 16));
+		connect(copy, &QPushButton::clicked, this, [this, vid, copy] {
+			QClipboard* clipboard = QGuiApplication::clipboard();
+			clipboard->setText(vid);
+			TipsWidget::ShowToast(copy, tr("CopySucess"));
+		});
+		hlayout->addWidget(copy);
+		hlayout->addStretch();
+		layout->addLayout(hlayout);
+		layout->addStretch(1);
 	}
 	else {
-		textLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+		//textLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 		layout->addWidget(textLabel, 1, Qt::AlignLeft | Qt::AlignVCenter);
 	}
 
-	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&)),
-		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&)), Qt::QueuedConnection);
+	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&, int)),
+		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&, int)), Qt::QueuedConnection);
 }
 
 void VideoTitleWidget::resizeEvent(QResizeEvent *event)
 {
 	QWidget::resizeEvent(event);
-	OnAttributeChanged(ATTR_VIDEO_TITLE, videoInfo);
+	OnAttributeChanged(ATTR_VIDEO_TITLE, videoInfo, videoInfo->rate);
 }
 
-void VideoTitleWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video)
+void VideoTitleWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate)
 {
+	(void)rate;
 	if (ATTR_VIDEO_TITLE != attribute) {
 		return;
 	}
@@ -413,38 +437,16 @@ VideoDownloadWidget::VideoDownloadWidget(QWidget* parent, const SharedVideoPtr& 
 	layout->addStretch(1);
 	setLayout(layout);
 	
-	downloadObj = PLVDownloadCreate();
-	PLVDownloadSetErrorHandler(downloadObj, [](const char* vid, int code, void* data) {
-		(void)vid;
-		VideoDownloadWidget* obj = (VideoDownloadWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnDownloadErrorHandler", Qt::QueuedConnection, 
-			Q_ARG(int, code));
-	}, this);
-	//downloadObj->SetCurrentBitRateHandler([](const char* vid, int inputBitRate, int realBitRate, void* data) {
-	//	(void)vid;
-	//	VideoDownloadWidget* obj = (VideoDownloadWidget*)data;
-	//	QMetaObject::invokeMethod(obj, "OnCurrentBitRateHandler", Qt::QueuedConnection,
-	//		Q_ARG(int, inputBitRate), Q_ARG(int, realBitRate));
-	//}, this);
-	PLVDownloadSetProgressHandler(downloadObj, [](const char* vid, long long receivedBytes, long long totalBytes, void* data) {
-		(void)vid;
-		VideoDownloadWidget* obj = (VideoDownloadWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnDownloadProgressHandler", Qt::QueuedConnection, 
-			Q_ARG(long long, receivedBytes), Q_ARG(long long, totalBytes));
-	}, this);
-	PLVDownloadSetResultHandler(downloadObj, [](const char* vid, int rate, int code, void* data) {
-		(void)vid;
-		VideoDownloadWidget* obj = (VideoDownloadWidget*)data;
-		QMetaObject::invokeMethod(obj, "OnDownloadResultHandler", Qt::QueuedConnection,
-			Q_ARG(int, rate), Q_ARG(int, code));
-	}, this);
+	downloader = new Downloader(this);
+	connect(downloader, &Downloader::SignalError, this, &VideoDownloadWidget::OnDownloadErrorHandler);
+	connect(downloader, &Downloader::SignalResult, this, &VideoDownloadWidget::OnDownloadResultHandler);
+	connect(downloader, &Downloader::SignalProgress, this, &VideoDownloadWidget::OnDownloadProgressHandler);
 
 	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
 	video->filePath = QT_TO_UTF8(path);
 	video->rate = rate;
-	PLVDownloadSetVideo(downloadObj, video->vid.c_str(), video->filePath.c_str(), rate);
-	int code = PLVDownloadStart(downloadObj, true);
-
+	downloader->SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
+	int code = downloader->Start(true);
 	if (E_NO_ERR != code) {
 		tipsLabel->setText(QTStr("DownloadError"));
 		SetControlSheet(tipsLabel, "LabelStyle", "error");
@@ -452,9 +454,8 @@ VideoDownloadWidget::VideoDownloadWidget(QWidget* parent, const SharedVideoPtr& 
 	else {
 		//tipsLabel->setText(QTStr("DownloadWait"));
 	}
-
-	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&)),
-		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&)), Qt::QueuedConnection);
+	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&, int)),
+		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&, int)), Qt::QueuedConnection);
 
 	speedTimer = new QTimer(this);
 	speedTimer->setInterval(1000);
@@ -464,22 +465,16 @@ VideoDownloadWidget::VideoDownloadWidget(QWidget* parent, const SharedVideoPtr& 
 
 VideoDownloadWidget::~VideoDownloadWidget()
 {
-	PLVDownloadDestroy(downloadObj);
-	downloadObj = nullptr;
+	delete downloader;
+	downloader = nullptr;
 }
 
 void VideoDownloadWidget::OnDownloadErrorHandler(int code)
 {
-	slog_error("error code:%d, msg:%s", code, PLVGetSdkErrorDescription(code));
+	slog_error("error code:%d, msg:%s", 
+		code, SdkManager::GetManager()->GetErrorDescription(code).toStdString().c_str());
 }
-//void VideoDownloadWidget::OnCurrentBitRateHandler(int inputBitRate, int realBitRate)
-//{
-//	videoInfo->rate = realBitRate;
-//	QString msg = QString(QTStr("BitRateChannge")).arg(inputBitRate).arg(realBitRate);
-//	QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowToast",
-//		Q_ARG(const QString&, msg));
-//}
-void VideoDownloadWidget::OnDownloadProgressHandler(long long receivedBytes, long long totalBytes)
+void VideoDownloadWidget::OnDownloadProgressHandler(qint64 receivedBytes, qint64 totalBytes)
 {
 	long value = 0;
 	if (totalBytes) {
@@ -501,10 +496,10 @@ void VideoDownloadWidget::OnDownloadResultHandler(int rate, int code)
 		{
 		case E_ABORT_DOWNLOAD:
 		case E_DELETE_VIDEO:
-			videoInfo->SetDownloadStatus(DOWNLOAD_OK);
+			videoInfo->SetDownloadStatus(DOWNLOAD_OK, curRate);
 			break;
 		default:
-			videoInfo->SetDownloadStatus(DOWNLOAD_ERROR);
+			videoInfo->SetDownloadStatus(DOWNLOAD_ERROR, curRate);
 			break;
 		}
 	}
@@ -518,8 +513,11 @@ void VideoDownloadWidget::OnDownloadResultHandler(int rate, int code)
 	}
 }
 
-void VideoDownloadWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video)
+void VideoDownloadWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate)
 {
+	if (rate != curRate) {
+		return;
+	}
 	switch (attribute)
 	{
 	case ATTR_VIDEO_DOWNLOAD_STATUS:
@@ -528,23 +526,26 @@ void VideoDownloadWidget::OnAttributeChanged(int attribute, const SharedVideoPtr
 		case DOWNLOAD_OK:
 			break;
 		case DOWNLOAD_RUN:
-			PLVDownloadStart(downloadObj, true);
+			SetControlSheet(tipsLabel, "LabelStyle", "");
+			downloader->Start(true);
 			speedTimer->start();
 			break;
 		case DOWNLOAD_PAUSE:
-			PLVDownloadStop(downloadObj);
+			downloader->Pause();
 			speedTimer->stop();
 			tipsLabel->setText(QTStr("Pause"));
 			speedLabel->setText(QString());
 			break;
 		case DOWNLOAD_ERROR:
+			speedTimer->stop();
 			tipsLabel->setText(QTStr("DownloadError"));
 			SetControlSheet(tipsLabel, "LabelStyle", "error");
+			speedLabel->setText(QString());
 			break;
 		case DOWNLOAD_CANCEL:
-			PLVDownloadDelete(downloadObj);
+			downloader->Delete();
 			QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnRemoveDownloadVideo",
-				Qt::QueuedConnection, Q_ARG(const SharedVideoPtr&, videoInfo));
+				Qt::QueuedConnection, Q_ARG(int, curRate), Q_ARG(const SharedVideoPtr&, videoInfo));
 			break;
 		}
 		break;
@@ -612,10 +613,11 @@ void VideoDownloadWidget::OnSpeedTimer(void)
 }
 
 ////////////////////////////////////////////////
-VideoActionWidget::VideoActionWidget(QWidget* parent, ActionType action, const SharedVideoPtr& video)
+VideoActionWidget::VideoActionWidget(QWidget* parent, ActionType action, const SharedVideoPtr& video, int rate)
 	: QWidget(parent)
 	, actionType(action)
 	, videoInfo(video)
+	, curRate(rate)
 {
 	QHBoxLayout* layout = new QHBoxLayout();
 	layout->setSpacing(16);
@@ -626,15 +628,18 @@ VideoActionWidget::VideoActionWidget(QWidget* parent, ActionType action, const S
 	{
 	case ACTION_DOWNLOAD:
 		downloadBtn = new StatusButton(this, "downloadButton", QTStr("Download"), QSize(24, 24));
-		connect(downloadBtn, &QPushButton::clicked, [&] {
+		connect(downloadBtn, &QPushButton::clicked, this, [this] {
 			QPointer<QMenu> popup = new QMenu(this);
 			auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, int rate, const SharedVideoPtr& video) {
 				QAction *item = new QAction(name, this);
 				popup->addAction(item);
-				connect(item, &QAction::triggered, [this, rate](bool pause) {
+				connect(item, &QAction::triggered, this, [this, rate](bool pause) {
 					QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(),
 						"OnAppendDownloadVideo", Q_ARG(int, rate), Q_ARG(const SharedVideoPtr&, videoInfo));
 				});
+				if (rate > video->rateCount) {
+					item->setEnabled(false);
+				}
 			};
 			AddAction(popup, QTStr("SD"), VIDEO_RATE_SD, videoInfo);
 			AddAction(popup, QTStr("HD"), VIDEO_RATE_HD, videoInfo);
@@ -647,44 +652,52 @@ VideoActionWidget::VideoActionWidget(QWidget* parent, ActionType action, const S
 	case ACTION_DOWNLOADING:
 		layout->addStretch(1);
 		pauseBtn = new StatusButton(this, "pauseButton", QTStr("PauseDownload"), QTStr("StartDownload"), QSize(24, 24));
-		connect(pauseBtn, &QPushButton::clicked, [this](bool pause) {
-			videoInfo->SetDownloadStatus(pause ? DOWNLOAD_PAUSE : DOWNLOAD_RUN);
+		connect(pauseBtn, &QPushButton::clicked, this, [this](bool pause) {
+			videoInfo->SetDownloadStatus(pause ? DOWNLOAD_PAUSE : DOWNLOAD_RUN, curRate);
 		});
 		layout->addWidget(pauseBtn);
 		retryBtn = new StatusButton(this, "retryButton", QTStr("RetryDownload"), QSize(24, 24));
-		connect(retryBtn, &QPushButton::clicked, [this] {
-			videoInfo->SetDownloadStatus(DOWNLOAD_RUN);
+		connect(retryBtn, &QPushButton::clicked, this, [this] {
+			videoInfo->SetDownloadStatus(DOWNLOAD_RUN, curRate);
 		});
 		retryBtn->setVisible(false);
 		layout->addWidget(retryBtn);
-		deleteBtn = new StatusButton(this, "deleteButton", QTStr("DeleteDownload"), QSize(24, 24));
-		connect(deleteBtn, &QPushButton::clicked, [this] {
-			videoInfo->SetDownloadStatus(DOWNLOAD_CANCEL);
-		});
+		deleteBtn = new StatusButton(this, "deleteButton", QTStr("DeleteDownload"), QSize(24, 24)); 
+		{
+			auto info = videoInfo;
+			connect(deleteBtn, &QPushButton::clicked, this, [info, rate] {
+				if (MsgBoxDialog::MSGBOX_RESULT_OK != MsgBoxDialog::ConfirmOK(
+					App()->GetMainWindow(), QTStr("AreYouSureToDeleteDownload"), 
+					QTStr("OK"), QTStr("Cancel"), QString(), nullptr)) {
+					return;
+				}
+				info->SetDownloadStatus(DOWNLOAD_CANCEL, rate);
+			});
+		}	
 		layout->addWidget(deleteBtn);
 		layout->addStretch(1);
 		break;
 	case ACTION_LOCAL:
 		layout->addStretch(1);
 		appendBtn = new StatusButton(this, "appendButton", QTStr("LocalLoad"), QSize(24, 24));
-		connect(appendBtn, &QPushButton::clicked, [this]() {
+		connect(appendBtn, &QPushButton::clicked, this, [this]() {
 			QPointer<QMenu> popup = new QMenu(this);
-			auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, int opt, const SharedVideoPtr& video) {
+			auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, const SharedVideoPtr& video) {
 				QAction *item = new QAction(name, this);
 				popup->addAction(item);
-				connect(item, &QAction::triggered, [this, opt](bool pause) {
+				connect(item, &QAction::triggered, this, [this](bool pause) {
 					QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(),
-						"OnPlaylistLocalVideo", Qt::QueuedConnection, Q_ARG(int, opt), Q_ARG(const SharedVideoPtr&, videoInfo));
+						"OnPlaylistLocalVideo", Qt::QueuedConnection, Q_ARG(const SharedVideoPtr&, videoInfo));
 				});
 			};
-			AddAction(popup, QTStr("LocalLoad"), 0, videoInfo);
-			AddAction(popup, QTStr("LocalPlay"), 1, videoInfo);
+			AddAction(popup, QTStr("LocalLoad"), videoInfo);
+			//AddAction(popup, QTStr("LocalPlay"), 1, videoInfo);
 			auto pos = appendBtn->mapToGlobal(appendBtn->pos());
 			popup->exec(QPoint(pos.x() - 12, pos.y() - 12));
 		});
 		layout->addWidget(appendBtn);
 		openBtn = new StatusButton(this, "openButton", QTStr("OpenDirectory"), QSize(24, 24));
-		connect(openBtn, &QPushButton::clicked, [this]() {
+		connect(openBtn, &QPushButton::clicked, this, [this]() {
 			std::string path = videoInfo->filePath + "/" + videoInfo->vid;
 			QDesktopServices::openUrl(QUrl::fromLocalFile(QT_UTF8(path.c_str())));
 		});
@@ -692,21 +705,28 @@ VideoActionWidget::VideoActionWidget(QWidget* parent, ActionType action, const S
 		//	std::bind(&VideoActionWidget::SignalOpen, this, videoInfo));
 		layout->addWidget(openBtn);
 		deleteBtn = new StatusButton(this, "deleteButton", QTStr("DeleteFile"), QSize(24, 24));
-		connect(deleteBtn, &QPushButton::clicked, [this]() {
+		connect(deleteBtn, &QPushButton::clicked, this, [this] {
+			if (MsgBoxDialog::MSGBOX_RESULT_OK != MsgBoxDialog::ConfirmOK(
+				App()->GetMainWindow(), QTStr("AreYouSureToDeleteFile"), QTStr("OK"), QTStr("Cancel"), QString(), nullptr)) {
+				return;
+			}
 			QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(),
-				"OnRemoveLocalVideo", Qt::QueuedConnection, Q_ARG(const SharedVideoPtr&, videoInfo));
+				"OnRemoveLocalVideo", Qt::QueuedConnection, Q_ARG(int, curRate), Q_ARG(const SharedVideoPtr&, videoInfo));
 		});
 		layout->addWidget(deleteBtn);
 		layout->addStretch(1);
 		break;
 	}
 
-	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&)),
-		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&)), Qt::QueuedConnection);
+	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&, int)),
+		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&, int)), Qt::QueuedConnection);
 }
 
-void VideoActionWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video)
+void VideoActionWidget::OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate)
 {
+	if (rate != curRate) {
+		return;
+	}
 	switch (attribute)
 	{
 	case ATTR_VIDEO_DOWNLOAD_STATUS:

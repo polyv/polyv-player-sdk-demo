@@ -37,6 +37,9 @@ public:
 	Configure& GlobalConfig() {
 		return globalConfig;
 	}
+
+private slots:
+	void OnDestroyWindow();
 private:
 	bool InitTheme();
 	bool InitConfig();

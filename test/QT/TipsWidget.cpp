@@ -18,7 +18,7 @@ TipsWidget::TipsWidget(QWidget* parent, const QString& Tips, TipType level, PosT
 	setAttribute(Qt::WA_TranslucentBackground);
 	setAttribute(Qt::WA_NoSystemBackground, false);
 
-	setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog | Qt::Popup);
+	setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::NoDropShadowWindowHint);
 	setMinimumHeight(32);
 
 	QWidget* mainWidget = new QWidget(this);
@@ -74,7 +74,7 @@ TipsWidget::TipsWidget(QWidget* parent, const QString& Tips, TipType level, PosT
 		animation = new QPropertyAnimation(this, "windowOpacity");
 		if (!showTimer) {
 			showTimer = new QTimer(this);
-			connect(showTimer, &QTimer::timeout, [&] {
+			connect(showTimer, &QTimer::timeout, this, [this] {
 				showTimer->stop();
 				Start();
 			});
@@ -94,6 +94,16 @@ TipsWidget::TipsWidget(QWidget* parent, const QString& Tips, TipType level, PosT
 }
 TipsWidget::~TipsWidget()
 {
+	if (parent()) {
+		parent()->removeEventFilter(this);
+	}
+	if (showTimer) {
+		showTimer->stop();
+		showTimer->deleteLater();
+	}
+	if (moveFilter) {
+		moveFilter->removeEventFilter(this);
+	}
 	if (animation) {
 		animation->deleteLater();
 	}

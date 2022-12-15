@@ -18,7 +18,9 @@ public:
 
 	QString GetToken(const QString& vid);
 
-	
+	void Stop();
+
+	static QString GetTokenSafeBlock(MyVideoList* object, const QString& vid);
 
 private:
 	void Run(void);
@@ -37,3 +39,4 @@ private:
 	QList<Item> vids;
 	std::thread* requestHttp = nullptr;
 };
+

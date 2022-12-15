@@ -1,0 +1,52 @@
+#include "winres.h"
+#include "verrsrc.h"
+
+#define FILENAME_STR         "@PROJECT_NAME@.dll"
+#define VERSION              @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+#define VERSION_STR          "@PROJECT_VERSION@.0"
+#define COMPANYNAME_STR      "@DLL_RESOURCE_COMPANY_NAME@"
+#define FILEDESCRIPTION_STR  "@DLL_RESOURCE_FILE_DESCRIPTION@"
+#define LEGALCOPYRIGHT_STR   "@DLL_RESOURCE_LEGAL_COPYRIGHT@"
+#define PRODUCTNAME_STR      "@DLL_RESOURCE_PRODUCT_NAME@"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION VERSION
+ PRODUCTVERSION VERSION
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+ FILEFLAGS VS_FF_DEBUG
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_DLL
+ FILESUBTYPE VFT_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName",      COMPANYNAME_STR
+            VALUE "FileDescription",  FILEDESCRIPTION_STR
+            VALUE "FileVersion",      VERSION_STR
+            VALUE "InternalName",     FILENAME_STR
+            VALUE "LegalCopyright",   LEGALCOPYRIGHT_STR
+            VALUE "OriginalFilename", FILENAME_STR
+            VALUE "ProductName",      PRODUCTNAME_STR
+            VALUE "ProductVersion",   VERSION_STR
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        /* The following line should only be modified for localized versions.     */
+        /* It consists of any number of WORD,WORD pairs, with each pair           */
+        /* describing a language,codepage combination supported by the file.      */
+        /*                                                                        */
+        /* For example, a file might have values "0x409,1252" indicating that it  */
+        /* supports English language (0x409) in the Windows ANSI codepage (1252). */
+
+        VALUE "Translation", 0x409, 1200
+
+    END
+END

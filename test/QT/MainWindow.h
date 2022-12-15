@@ -1,22 +1,23 @@
 #pragma once
 
-#include <QWidget>
+#include <QMainWindow>
+#include <QMap>
 #include <QPointer>
 #include <QTableWidgetItem>
 
 #include "VideoControl.h"
 
 class MyVideoList;
-class ParamDialog;
 class TipsWidget;
 class DeviceWarnDialog;
+class MultiPlayerDialog;
 
 
 namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QWidget
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
@@ -25,9 +26,8 @@ public:
     ~MainWindow();
 
     bool Init(void);
+	QString GetToken(const QString& vid);
 protected:
-	virtual void keyPressEvent(QKeyEvent* e) override;
-	virtual void resizeEvent(QResizeEvent *event) override;
 	virtual void closeEvent(QCloseEvent* e) override;
 private slots:
 	void on_paramButton_clicked(void);
@@ -37,20 +37,21 @@ private slots:
 	//void on_stackedWidget_currentChanged(int index);
 
 	void OnShowListVideo(void);
-	void OnReturnListVideo(void);
+	//void OnReturnListVideo(void);
 	void OnShowTips(int level, const QString& msg);
 	void OnShowToast(const QString& msg);
 
-	void OnPlayVideo(bool local, const SharedVideoPtr& video);
+	void OnPlayVideo(bool local, const SharedVideoPtr& video, int rate);
 	void OnChangeRatePlayVideo(int rate, int seekMillisecond, const SharedVideoPtr& video);
+	//void OnOpenParamWindow(QString vid);
 
 	void OnCompleteRequestVideo(void);
 	void OnAppendMyVideo(const SharedVideoPtr& video, bool focus);
 	void OnAppendDownloadVideo(int rate, const SharedVideoPtr& video);
-	void OnRemoveDownloadVideo(const SharedVideoPtr& video);
+	void OnRemoveDownloadVideo(int rate, const SharedVideoPtr& video);
 	void OnAppendLocalVideo(int rate, const SharedVideoPtr& video);
-	void OnRemoveLocalVideo(const SharedVideoPtr& video);
-	void OnPlaylistLocalVideo(int opt, const SharedVideoPtr& video);
+	void OnRemoveLocalVideo(int rate, const SharedVideoPtr& video);
+	void OnPlaylistLocalVideo(const SharedVideoPtr& video);
 
 	void OnFullScreen(void);
 	void OnExitFullScreen(void);
@@ -60,10 +61,8 @@ private slots:
 	void OnHighlightItem(void);
 
 #ifdef _WIN32
-	void OnHDMIDevice(QString id, int type);
+	void OnHDMIDevice(int type, QString id);
 	void OnPluginInject(void);
-	void OnUpdateSoftwareRecord(bool enable);
-	void OnUpdateHdmiRecord(bool enable);
 #endif // _WIN32
 
 	void OnEnableWindow(const QString& id, bool enable);
@@ -79,13 +78,16 @@ private:
 
 	void StartItemHighlight(const std::string& vid);
 	void StopItemHighlight(void);
+	void CloseDialogs();
+
+	QString CreateVid(int rate, const SharedVideoPtr& video);
+	QString CreateVid(int rate, const std::string& vid);
 private:
 	void TestMyVideoItem(void);
 private:
     Ui::MainWindow *ui;
-	QPushButton* returnVideo = nullptr;
+	//QPushButton* returnVideo = nullptr;
 	QPushButton* showVideo = nullptr;
-	QPointer<ParamDialog> paramDialog;
 
 	MyVideoList* myVideoList;
 
@@ -107,13 +109,9 @@ private:
 
 	void UpdateItemTitle(QTableWidget* table, const QMap<std::string, SharedItemPtr>& map, 
 		const std::string& vid, const std::string& title);
-	
-	bool isFullscreen = false;
-	bool isFullscreenMax = false;
-	QRect fullscreenNormalRect;
+	//void SelecteTableItem(QTableWidget* table, const SharedItemPtr& item, bool selecte);
 
 	const int kMyVideoItemCount = 5;
-
 
 	enum {
 		HDMI_ENABLE_WIN = 0,

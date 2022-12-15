@@ -1,0 +1,7 @@
+#ifndef PREBUILD_DEFINED_H
+#define PREBUILD_DEFINED_H
+
+#define COMMIT_HASH "@PROJECT_COMMIT_HASH@"
+#define DEV_SUFFIX "@DEV_SUFFIX@"
+
+#endif

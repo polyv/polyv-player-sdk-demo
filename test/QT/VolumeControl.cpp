@@ -9,10 +9,10 @@
 VolumeControl::VolumeControl(QWidget* parent)
 	: QWidget(parent)
 {
-	setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::Window);
+	setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::Window | Qt::NoDropShadowWindowHint);
 	setFixedSize(40, 120);
 
-	volumeSlider = new SliderControl(this);
+	volumeSlider = new QSlider(this);
 	volumeSlider->setOrientation(Qt::Vertical);
 	volumeSlider->setMinimum(0);
 	volumeSlider->setMaximum(100);
@@ -26,6 +26,9 @@ VolumeControl::VolumeControl(QWidget* parent)
 	setLayout(mainLayout);
 
 	connect(volumeSlider, SIGNAL(valueChanged(int)), this, SIGNAL(SignalVolume(int)));
+	connect(volumeSlider, &QSlider::valueChanged, this, [this](int value) {
+		this->setToolTip(QString(QTStr("VolumeValue")).arg(value));
+	});
 }
 
 void VolumeControl::SetValue(int value)
@@ -35,6 +38,7 @@ void VolumeControl::SetValue(int value)
 		oldValue = volumeSlider->value();
 	}
 	volumeSlider->setValue(value);
+	this->setToolTip(QString(QTStr("VolumeValue")).arg(volumeSlider->value()));
 	volumeSlider->blockSignals(false);
 }
 

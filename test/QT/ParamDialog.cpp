@@ -19,8 +19,11 @@ ParamDialog::ParamDialog(QWidget *parent)
 	f |= Qt::FramelessWindowHint;
 #endif
 	setWindowFlags(f);
-	setAttribute(Qt::WA_DeleteOnClose, true);
-	ui->titleBar->Init(this, TITLE_CLOSE_BTN);
+#ifdef _WIN32
+	ui->titleBar->Init(this, TITLE_CLOSE_BTN | TITLE_MIN_BTN);
+#else
+	ui->titleBar->Init(this, TITLE_CLOSE_BTN/* | TITLE_MIN_BTN*/);
+#endif	
 	ui->titleBar->SetLogoable(false, QSize(188, 20));
 	ui->titleBar->SetTitleable(true);
 	ui->titleBar->SetTitleName(QTStr("ListParam"));
@@ -35,7 +38,7 @@ ParamDialog::ParamDialog(QWidget *parent)
 	ui->paramTable->verticalHeader()->setDefaultSectionSize(48);
 	ui->paramTable->verticalHeader()->setCascadingSectionResizes(false);
 	ui->paramTable->verticalHeader()->setFixedWidth(16);
-	ui->paramTable->verticalHeader()->setVisible(true);
+	ui->paramTable->verticalHeader()->setVisible(false);
 	ui->paramTable->verticalHeader()->setHighlightSections(false);
 
 	ui->paramTable->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -67,11 +70,9 @@ ParamDialog::~ParamDialog()
     delete ui;
 }
 
-void ParamDialog::OnPropReset(void)
+void ParamDialog::SetVideoName(const QString& name)
 {
-	for (auto & it : mapItems) {
-		it->setText(QString());
-	}
+	ui->titleBar->SetTitleName(QString("%1%2").arg(name).arg(QTStr("VideoListParam")));
 }
 void ParamDialog::SetPropValue(int prop, const QString& value)
 {
@@ -103,13 +104,18 @@ void ParamDialog::SetPropValue(int prop, const QString& value)
 		item->setText(value + "%");
 		break;
 	case MEDIA_PROPERTY_CACHE_TIME:
-		item->setText(value + " s");
+		item->setText(value + " ms");
 		break;
 	default:
 		item->setText(value);
 		break;
+	}	
+}
+void ParamDialog::OnPropReset(void)
+{
+	for (auto& it : mapItems) {
+		it->setText(QString());
 	}
-	
 }
 void ParamDialog::OnPropChange(int prop, const QString& value)
 {

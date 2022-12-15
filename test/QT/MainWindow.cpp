@@ -10,11 +10,11 @@
 #include <QDesktopWidget>
 #include <QHeaderView>
 #include <QKeyEvent>
+#include <QScreen>
 #include <http/http-param.h>
 
 #include "SdkManager.h"
 #include "Application.h"
-#include "ParamDialog.h"
 #include "SettingDialog.h"
 #include "VidDialog.h"
 #include "VideoControl.h"
@@ -23,25 +23,43 @@
 #include "MyVideoList.h"
 #include "DeviceWarnDialog.h"
 #include "MsgBoxDialog.h"
+#include "MultiPlayerDialog.h"
 
+namespace {
+	QString GetFileSizeStr(quint64 fileSize, int maxLevel = 4) // factor is 1024, maxLevel 4 is GB
+	{
+		double size = fileSize;
+		QStringList sizeUnit =
+			QStringList({ "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" }).mid(0, maxLevel);
+		double factor = 1024.0;
+		QString fileSizeStr;
+		for (auto& unit : sizeUnit.mid(0, maxLevel - 1)) {
+			if (size < factor) {
+				fileSizeStr = QString::asprintf("%3.2f %s", size, qUtf8Printable(unit));
+				break;
+			}
+			size /= factor;
+		}
+		if (fileSizeStr.isEmpty())
+			fileSizeStr = QString::asprintf("%.2f %s", size, qUtf8Printable(sizeUnit.last()));
+		return fileSizeStr;
+	}
+}
 
 MainWindow::MainWindow(QWidget *parent)
-	: QWidget(parent)
+	: QMainWindow(parent)
 	, ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
-	Qt::WindowFlags f;
-	f |= Qt::Dialog;
+	Qt::WindowFlags f = windowFlags();
 	f |= Qt::WindowCloseButtonHint;
 	f |= Qt::WindowMinMaxButtonsHint;
-	f |= Qt::CustomizeWindowHint;
 	f |= Qt::WindowSystemMenuHint;
 #ifdef _WIN32
 	f |= Qt::FramelessWindowHint;
 #endif
 	setWindowFlags(f);
 	setAttribute(Qt::WA_Mapped);
-	setAttribute(Qt::WA_DeleteOnClose);
 	
 	myVideoList = new MyVideoList;
 }
@@ -56,19 +74,16 @@ bool MainWindow::Init(void)
 	ui->titleBar->Init(this, TITLE_ALL_BTN);
 	ui->titleBar->SetResizable(true);
 
-	ui->player->SetMainWindow(this);
-
 	showVideo = new StatusButton(ui->titleBar, "showVideoButton", QTStr("ShowVideo"), QSize(24, 24));
 	showVideo->setVisible(false);
 	connect(showVideo, SIGNAL(clicked()), this, SLOT(OnShowListVideo()));
 	QHBoxLayout* titleLayout = ui->titleBar->GetLeftLayout();
 	titleLayout->insertWidget(0, showVideo);
 
-	returnVideo = new StatusButton(ui->titleBar, "returnVideoButton", QTStr("ReturnVideo"));
-	returnVideo->setVisible(false);
-	connect(returnVideo, SIGNAL(clicked()), this, SLOT(OnReturnListVideo()));
-	titleLayout->insertWidget(1, returnVideo);
-
+	//returnVideo = new StatusButton(ui->titleBar, "returnVideoButton", QTStr("ReturnVideo"));
+	//returnVideo->setVisible(false);
+	//connect(returnVideo, SIGNAL(clicked()), this, SLOT(OnReturnListVideo()));
+	//titleLayout->insertWidget(1, returnVideo);
 
 	ui->myVideoButton->SetNormalIcon(QStringLiteral(":res/images/control/my_video_normal.svg"), 
 		QStringLiteral(":res/images/control/my_video_active.svg"));
@@ -82,7 +97,7 @@ bool MainWindow::Init(void)
 
 	ui->listVideoGroup->setId(ui->myVideoButton, 0);
 	ui->listVideoGroup->setId(ui->listVideoButton, 1);
-	connect(ui->listVideoGroup, static_cast<void(QButtonGroup::*)(int)>(&QButtonGroup::buttonClicked),
+	connect(ui->listVideoGroup, static_cast<void(QButtonGroup::*)(int)>(&QButtonGroup::buttonClicked), this,
 		[&](int id) {
 		ui->listvideo->setCurrentIndex(id);
 	});
@@ -90,7 +105,7 @@ bool MainWindow::Init(void)
 
 	ui->taskVideoGroup->setId(ui->downloadingButton, 0);
 	ui->taskVideoGroup->setId(ui->localButton, 1);
-	connect(ui->taskVideoGroup, static_cast<void(QButtonGroup::*)(int)>(&QButtonGroup::buttonClicked),
+	connect(ui->taskVideoGroup, static_cast<void(QButtonGroup::*)(int)>(&QButtonGroup::buttonClicked), this,
 		[&](int id) {
 		ui->taskvideo->setCurrentIndex(id);
 	});
@@ -137,80 +152,84 @@ bool MainWindow::Init(void)
 	ui->localVideoTable->horizontalHeader()->setSectionResizeMode(col++, QHeaderView::Fixed);
 	ui->localvideo->InitTableWidget(ui->localVideoTable);
 
+	QSize defSize(960, 540);
 	ShowListVideo();
+	ui->myVideoButton->click();
+	ui->myVideoButton->setChecked(true);
+	
 	show();
+	resize(defSize);
+	QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+	if (screen) {
+		QRect rc = this->geometry();
+		this->move(screen->geometry().left() + (screen->size().width() - rc.width()) / 2,
+			screen->geometry().top() + (screen->size().height() - rc.height()) / 2);
+	}	
 
 	loadTipWidget = TipsWidget::ShowWithParam(ui->content, QTStr("LoadVideoInfo"), 
 		TipsWidget::TIP_INFO, TipsWidget::TIP_POS_TOP, 0, false, false, true);
 	myVideoList->RequestAll();
 
 #ifdef _WIN32
-	OnUpdateSoftwareRecord(App()->GlobalConfig().Get("Video", "SoftwareRecord").toBool());
-	OnUpdateHdmiRecord(App()->GlobalConfig().Get("Video", "HdmiCallback").toBool());
+	SdkManager::GetManager()->SetSoftwareRecord((void*)this->winId(), 
+		App()->GlobalConfig().Get("Video", "SoftwareRecord").toBool());
+	SdkManager::GetManager()->SetHdmiRecord(App()->GlobalConfig().Get("Video", "HdmiCallback").toBool());
+	connect(SdkManager::GetManager(), &SdkManager::SignalPluginInject, this, &MainWindow::OnPluginInject);
+	connect(SdkManager::GetManager(), &SdkManager::SignalHDMIDeviceChanged, this, &MainWindow::OnHDMIDevice);
 #endif// _WIN32
+
+	//resize(defSize);// multi screen, diff dpi
 	return true;
 }
 
-void MainWindow::keyPressEvent(QKeyEvent* e)
+QString MainWindow::GetToken(const QString& vid)
 {
-	if (Qt::Key_Escape == e->key() && isFullscreen) {
-		OnExitFullScreen();
-	}
-	QWidget::keyPressEvent(e);	
-}
-
-void MainWindow::resizeEvent(QResizeEvent *e)
-{
-	QWidget::resizeEvent(e);
+	return MyVideoList::GetTokenSafeBlock(myVideoList, vid);
+	//return myVideoList->GetToken(vid);
 }
 
 void MainWindow::closeEvent(QCloseEvent* e)
 {
+	if (MsgBoxDialog::MSGBOX_RESULT_OK != MsgBoxDialog::ConfirmOK(
+		this, QTStr("AreYouSureToExit"), QTStr("OK"), QTStr("Cancel"), QString(), nullptr)) {
+		e->ignore();
+		return;
+	}
 	hide();
-	OnCloseLoadTip();
+	CloseDialogs();
+	MultiPlayerDialog::CloseAll();
 	ui->player->Destroy();
-	QWidget::closeEvent(e);
+	OnCloseLoadTip();
+	if (myVideoList) {
+		myVideoList->Stop();
+		myVideoList->deleteLater();
+	}
+	QMainWindow::closeEvent(e);
 }
 
 void MainWindow::on_paramButton_clicked(void)
 {
-	if (paramDialog) {
-		paramDialog->show();
-		return;
-	}
-	paramDialog = new ParamDialog(this);
-	connect(ui->player, SIGNAL(SignalPropChange(int, const QString&)), 
-		paramDialog, SLOT(OnPropChange(int, const QString&)));
-	connect(ui->player, SIGNAL(SignalPropReset()), 
-		paramDialog, SLOT(OnPropReset()));
-	connect(paramDialog, &ParamDialog::finished, [&](int) {
-		paramDialog = nullptr;
-	});
-	auto props = ui->player->GetProps();
-	for (auto &it : props) {
-		paramDialog->SetPropValue(it.property, it.value);
-	}
-	paramDialog->show();
+	ui->player->OpenParamWindow();
 }
 
 void MainWindow::on_settingButton_clicked(void)
 {
-	SettingDialog* dlg = new SettingDialog(this);
-	if (QDialog::Accepted == dlg->exec()) {
-		ui->player->UpdateCache();
-	}
+	SettingDialog dlg(this);
+	dlg.exec();
+	ui->player->RefreshPlayer();
 }
 
 void MainWindow::on_refreshButton_clicked(void)
 {
 	myVideoList->RequestAll();
+	OnShowTips(TipsWidget::TIP_INFO, tr("RefreshCurrentVideo"));
 }
 
 void MainWindow::on_vidButton_clicked(void)
 {
-	VidDialog* dlg = new VidDialog(this);
-	if (QDialog::Accepted == dlg->exec()) {
-		auto vid = dlg->GetVID();
+	VidDialog dlg(this);
+	if (QDialog::Accepted == dlg.exec()) {
+		auto vid = dlg.GetVID();
 		auto item = mapMyVideos.value(QT_TO_UTF8(vid));
 		if (item) {
 			StartItemHighlight(item->video->vid);
@@ -219,7 +238,6 @@ void MainWindow::on_vidButton_clicked(void)
 			myVideoList->RequestVid(vid);
 		}
 	}
-	dlg->deleteLater();
 }
 //void MainWindow::on_stackedWidget_currentChanged(int index)
 //{
@@ -232,10 +250,10 @@ void MainWindow::OnShowListVideo(void)
 	ShowListVideo();
 }
 
-void MainWindow::OnReturnListVideo(void)
-{
-	ShowListVideo();
-}
+//void MainWindow::OnReturnListVideo(void)
+//{
+//	ShowListVideo();
+//}
 
 void MainWindow::OnShowTips(int level, const QString& msg)
 {
@@ -247,13 +265,14 @@ void MainWindow::OnShowToast(const QString& msg)
 	TipsWidget::ShowToast(ui->content, msg);
 }
 
-void MainWindow::OnPlayVideo(bool local, const SharedVideoPtr& video)
+void MainWindow::OnPlayVideo(bool local, const SharedVideoPtr& video, int rate)
 {
 	QString token;
 	if (!local && 1 == video->seed) {
-		token = myVideoList->GetToken(QT_UTF8(video->vid.c_str()));
+		token = GetToken(QT_UTF8(video->vid.c_str()));
 	}
-	if (!ui->player->Play(local, token, video, 0)) {
+	int seek = App()->GlobalConfig().Get("Video", "VideoPlaySeek").toInt();
+	if (!ui->player->Play(local, token, video, rate, seek * 1000)) {
 		OnShowTips(TipsWidget::TIP_ERROR, QTStr("PlayerError"));
 		return;
 	}
@@ -265,20 +284,27 @@ void MainWindow::OnChangeRatePlayVideo(int rate, int seekMillisecond, const Shar
 {
 	QString token;
 	if (1 == video->seed) {
-		token = myVideoList->GetToken(QT_UTF8(video->vid.c_str()));
+		token = GetToken(QT_UTF8(video->vid.c_str()));
 	}
-	ui->player->Stop();
-	if (ui->player->RePlay(rate, seekMillisecond, token, video)) {
-		return;
-	}
-	ui->player->Play(false, token, video, seekMillisecond);
+//#ifdef _WIN32
+	ui->player->OnlineRePlay(rate, seekMillisecond, token, video);
+//#else
+//	// in macos must wait player real stop media, (will stuck)
+//	QTimer::singleShot(200, this, [this, rate, seekMillisecond, token, video] {
+//		ui->player->OnlineRePlay(rate, seekMillisecond, token, video);
+//	});
+//#endif
+	
 }
-
+//void MainWindow::OnOpenParamWindow(QString vid)
+//{
+//	(void)vid;
+//	on_paramButton_clicked();
+//}
 void MainWindow::OnCloseLoadTip(void)
 {
 	if (loadTipWidget) {
 		loadTipWidget->close();
-		loadTipWidget->deleteLater();
 		loadTipWidget = nullptr;
 	}
 }
@@ -286,10 +312,8 @@ void MainWindow::OnCloseLoadTip(void)
 void MainWindow::OnHighlightItem(void)
 {
 	auto item = mapMyVideos.value(curHighlightVid);
-	if (item) {
-		auto select = ui->myVideoTable->item(item->item->row(), 1)->isSelected();//  ui->myVideoTable->isItemSelected(ui->myVideoTable->item(item->item->row(), 1));
-		ui->myVideoTable->item(item->item->row(), 1)->setSelected(!select);// ui->myVideoTable->setItemSelected(ui->myVideoTable->item(item->item->row(), 1), !select);
-
+	if (item && item->item) {
+		item->item->setSelected(!item->item->isSelected());
 		curHighlight++;
 	}
 	if (curHighlight >= 10) {
@@ -298,7 +322,7 @@ void MainWindow::OnHighlightItem(void)
 }
 
 #ifdef _WIN32
-void MainWindow::OnHDMIDevice(QString id, int type)
+void MainWindow::OnHDMIDevice(int type,  QString id)
 {
 	static DeviceWarnDialog* warnDialog = nullptr;
 	switch (type)
@@ -315,7 +339,8 @@ void MainWindow::OnHDMIDevice(QString id, int type)
 				return;
 			}
 			warnDialog = new DeviceWarnDialog(id, this);
-			connect(warnDialog, &DeviceWarnDialog::finished, [&](int) {
+			//warnDialog->setAttribute(Qt::WA_DeleteOnClose, true);
+			connect(warnDialog, &DeviceWarnDialog::finished, this, [&](int) {
 				warnDialog = nullptr;
 			});
 			warnDialog->show();
@@ -345,25 +370,6 @@ void MainWindow::OnPluginInject(void)
 	}
 }
 
-void MainWindow::OnUpdateSoftwareRecord(bool enable)
-{
-	if (E_NO_ERR != PLVSetPreventRecord((void*)this->winId(), enable)) {
-		slog_error("set prevent record error");
-	}
-
-	PLVSetPluginInjectHandler(enable, [](void* data) {
-		MainWindow* obj = (MainWindow*)data;
-		QMetaObject::invokeMethod(obj, "OnPluginInject", Qt::QueuedConnection);
-	}, this);	
-}
-void MainWindow::OnUpdateHdmiRecord(bool enable)
-{
-	PLVSetHDMIDeviceChangedHandler(enable, [](HDMI_DEVICE_TYPE type, const char* device, void* data) {
-		MainWindow* obj = (MainWindow*)data;
-		QMetaObject::invokeMethod(obj, "OnHDMIDevice", Qt::QueuedConnection,
-			Q_ARG(QString, device), Q_ARG(int, type));
-	}, this);
-}
 #endif // _WIN32
 
 
@@ -386,8 +392,6 @@ void MainWindow::OnEnableWindows()
 	mapDisables.clear();
 	EnableWindow(true);
 }
-
-
 
 void MainWindow::EnableWindow(bool enable)
 {
@@ -429,18 +433,35 @@ void MainWindow::OnCompleteRequestVideo(void)
 				break;
 			}
 			QJsonObject item = jsonDocument.object();
-			std::string vid = QT_TO_UTF8(item["vid"].toString());
-			std::string path = QT_TO_UTF8(item["path"].toString());
+			QString vid = item["vid"].toString();
+			QString path = item["path"].toString();
 			int rate = item["rate"].toInt();
-			auto video = mapMyVideos.value(vid);
+			if (!SdkManager::GetManager()->CheckFileComplete(vid, path, rate)) {
+				break;
+			}
+			SharedVideoPtr videoInfo;
+			auto video = mapMyVideos.value(vid.toStdString());
 			if (!video) {
-				break;
+				QString videoUrl = item["mp4"].toString();
+				if (videoUrl.isEmpty()) {
+					break;
+				}
+				videoInfo = std::make_shared<VideoInfo>();
+				videoInfo->vid = vid.toStdString();
+				videoInfo->filePath = path.toStdString();
+				videoInfo->videoUrl = videoUrl.toStdString();
+				videoInfo->imageUrl = QT_TO_UTF8(item["first_image"].toString());
+				videoInfo->title = QT_TO_UTF8(item["title"].toString());
+				videoInfo->duration = QT_TO_UTF8(item["duration"].toString());
+				videoInfo->seed = item["seed"].toInt();
+				videoInfo->rateCount = item["df"].toInt();
+				videoInfo->size = (long long)item["source_filesize"].toDouble();
 			}
-			if (!PLVCheckFileComplete(vid.c_str(), path.c_str(), rate)) {
-				break;
+			else {
+				videoInfo = video->video;
+				videoInfo->filePath = path.toStdString();
 			}
-			video->video->filePath = path;
-			InsertLocalItem(rate, video->video);
+			InsertLocalItem(rate, videoInfo);
 			result = true;
 		} while (false);
 		if (!result) {
@@ -468,9 +489,10 @@ void MainWindow::OnAppendDownloadVideo(int rate, const SharedVideoPtr& video)
 		ui->downloadingButton->setChecked(true);
 	}
 }
-void MainWindow::OnRemoveDownloadVideo(const SharedVideoPtr& video)
+void MainWindow::OnRemoveDownloadVideo(int rate, const SharedVideoPtr& video)
 {
-	auto item = mapDownloadVideos.take(video->vid);
+	QString vid = CreateVid(rate, video);
+	auto item = mapDownloadVideos.take(vid.toStdString());
 	if (!item) {
 		return;
 	}
@@ -479,7 +501,8 @@ void MainWindow::OnRemoveDownloadVideo(const SharedVideoPtr& video)
 }
 void MainWindow::OnAppendLocalVideo(int rate, const SharedVideoPtr& video)
 {
-	auto item = mapDownloadVideos.take(video->vid);
+	QString vid = CreateVid(rate, video);
+	auto item = mapDownloadVideos.take(vid.toStdString());
 	if (item) {
 		ui->downloadVideoTable->removeRow(item->item->row());
 		ui->downloadvideo->SetTableEmpty(mapDownloadVideos.isEmpty());
@@ -492,24 +515,26 @@ void MainWindow::OnAppendLocalVideo(int rate, const SharedVideoPtr& video)
 	}
 }
 
-void MainWindow::OnRemoveLocalVideo(const SharedVideoPtr& video)
+void MainWindow::OnRemoveLocalVideo(int rate, const SharedVideoPtr& video)
 {
-	auto item = mapLocalVideos.take(video->vid);
+	QString vid = CreateVid(rate, video);
+	auto item = mapLocalVideos.take(vid.toStdString());
 	if (!item) {
 		return;
 	}
 	ui->localVideoTable->removeRow(item->item->row());
 	ui->localvideo->SetTableEmpty(mapLocalVideos.isEmpty());
 
-	auto downloadObj = PLVDownloadCreate();
-	for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
-		PLVDownloadSetVideo(downloadObj, video->vid.c_str(), video->filePath.c_str(), i);
-		PLVDownloadDelete(downloadObj);
+	{
+		Downloader downloader(this);
+		for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
+			downloader.SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), i);
+			downloader.Delete();
+		}
 	}
-	PLVDownloadDestroy(downloadObj);
-
+	
 	QString localPath = App()->GetLocalPath();
-	QString fileName = QString("%1/%2.json").arg(localPath).arg(video->vid.c_str());
+	QString fileName = QString("%1/%2_%3.json").arg(localPath).arg(video->vid.c_str()).arg(rate);
 	QFile::remove(fileName);
 
 	//localPath = QString("%1/%2").arg(QT_UTF8(video->filePath.c_str())).
@@ -537,66 +562,46 @@ void MainWindow::OnRemoveLocalVideo(const SharedVideoPtr& video)
 	//}
 }
 
-void MainWindow::OnPlaylistLocalVideo(int opt, const SharedVideoPtr& video)
+void MainWindow::OnPlaylistLocalVideo(const SharedVideoPtr& video)
 {
-	if (ui->player->LoadLocal(opt, video)) {
-		ShowPlayer();
-		ui->titleBar->SetTitleName(QT_UTF8(video->title.c_str()));
-	}
+	MultiPlayerDialog::Open(video);
 }
 
 void MainWindow::OnFullScreen(void)
 {
-	isFullscreen = true;
-	fullscreenNormalRect = geometry();
-	if (!ui->titleBar->IsMaximize()) {
-		isFullscreenMax = true;
-		ui->titleBar->SetMaximize(true);
-	}
-	QDesktopWidget *deskWidget = qApp->desktop();
-	setGeometry(deskWidget->screenGeometry(this));
-	ui->titleBar->hide();
-	ui->titleBar->SetFullScreen(true);
+	ui->titleBar->ShowFullScreen(true);
 }
 
 void MainWindow::OnExitFullScreen(void)
 {
-	isFullscreen = false;
-	if (ui->titleBar->IsMaximize() && !isFullscreenMax) {
-		ui->titleBar->ShowMaximize();
-	}
-	else {
-		ui->titleBar->ShowNormal();
-	}
-	isFullscreenMax = false;
-	setGeometry(fullscreenNormalRect);
-	ui->titleBar->show();
-	ui->titleBar->SetFullScreen(false);
+	ui->titleBar->ShowFullScreen(false);
 }
 
 void MainWindow::ShowPlayer(void)
 {
+#ifdef _WIN32
+	ui->titleBar->SetResizeFrameColor(QColor(12, 12, 12));
+#endif
 	ui->player->setVisible(true);
 	ui->list->setVisible(false);
-
-	ui->player->SetShowPlayer(true);
 
 	ui->titleBar->SetLogoable(false, QSize(188, 20));
 	ui->titleBar->SetTitleable(true);
 	showVideo->setVisible(true);
-	returnVideo->setVisible(true);
+	//returnVideo->setVisible(true);
 }
 void MainWindow::ShowListVideo(void)
 {
+#ifdef _WIN32
+	ui->titleBar->SetResizeFrameColor(QColor(237, 241, 247));
+#endif
 	ui->player->setVisible(false);
 	ui->list->setVisible(true);
-
-	ui->player->SetShowPlayer(false);
 
 	ui->titleBar->SetLogoable(true, QSize(188, 20));
 	ui->titleBar->SetTitleable(false);
 	showVideo->setVisible(false);
-	returnVideo->setVisible(false);
+	//returnVideo->setVisible(false);
 }
 
 bool MainWindow::InsertMyVideoItem(const SharedVideoPtr& video, bool focus)
@@ -611,10 +616,11 @@ bool MainWindow::InsertMyVideoItem(const SharedVideoPtr& video, bool focus)
 		auto item = mapMyVideos.value(video->vid);
 		if (item) {
 			ui->myVideoTable->scrollToItem(item->item);
-			if (item->video->SetTitle(video->title, false)) {
-				QString text = QString("%1\nVID:%2").arg(QT_UTF8(video->title.c_str())).arg(QT_UTF8(video->vid.c_str()));
-				QTableWidgetItem* tableItem = ui->myVideoTable->item(item->item->row(), 1);
-				tableItem->setText(text);
+			if (item->video->SetTitle(video->title, video->rate, true)) {
+				item->video->SetImage(video->imageUrl, video->rate);
+				//QString text = QString("%1\nVID:%2").arg(QT_UTF8(video->title.c_str())).arg(QT_UTF8(video->vid.c_str()));
+				//QTableWidgetItem* tableItem = ui->myVideoTable->item(item->item->row(), 1);
+				//tableItem->setText(text);
 				UpdateItemTitle(ui->downloadVideoTable, mapDownloadVideos, video->vid, video->title);
 				UpdateItemTitle(ui->localVideoTable, mapLocalVideos, video->vid, video->title);
 			}
@@ -630,29 +636,48 @@ bool MainWindow::InsertMyVideoItem(const SharedVideoPtr& video, bool focus)
 		int col = 0;
 		item->item = new QTableWidgetItem;
 		ui->myVideoTable->setItem(row, col, item->item);
-		auto cover = new VideoCoverWidget(ui->myVideoTable, false, video);
+		auto cover = new VideoCoverWidget(ui->myVideoTable, false, video, video->rate);
 		ui->myVideoTable->setCellWidget(row, col++, cover);
-		QString text = QString("%1\nVID:%2").arg(QT_UTF8(video->title.c_str())).arg(QT_UTF8(video->vid.c_str()));
+		auto title = new VideoTitleWidget(ui->myVideoTable, true, video);
+		//QString text = QString("%1\nVID:%2").arg(QT_UTF8(video->title.c_str())).arg(QT_UTF8(video->vid.c_str()));
 		//QString text = QString("<span style='font-size:14px;text-align:left;color:#668196'>%1</span><br>\
 		//	<span style='font-size:12px;color:#668196;text-align:left'>VID:%2</span>").arg(QT_UTF8(video->title.c_str())).arg(QT_UTF8(video->vid.c_str()));
-		QTableWidgetItem* tableItem = new QTableWidgetItem(text);
-		ui->myVideoTable->setItem(row, col++, tableItem);
-		tableItem = new QTableWidgetItem(QT_UTF8(video->duration.c_str()));
+		//QTableWidgetItem* tableItem = new QTableWidgetItem;
+		//ui->myVideoTable->setItem(row, col++, tableItem);
+		ui->myVideoTable->setCellWidget(row, col++, title);
+
+		auto tableItem = new QTableWidgetItem(QT_UTF8(video->duration.c_str()));
 		tableItem->setTextAlignment(Qt::AlignCenter);
 		ui->myVideoTable->setItem(row, col++, tableItem);
-		double size = video->size / (1024 * 1024);
-		tableItem = new QTableWidgetItem(QString("%1MB").arg(QString::number(size, 'f', 2)));
+
+		QString sizeText = GetFileSizeStr(video->size);
+		//if (video->sizes.empty()) {
+		//	double size = video->size / (1024 * 1024);
+		//	sizeText = QString("%1MB").arg(QString::number(size, 'f', 2));
+		//}
+		//else {
+		//	for (size_t i = 0; i < video->sizes.size(); ++i) {
+		//		double size = video->sizes[i] / (1024 * 1024);
+		//		sizeText += (sizeText.isEmpty() ?
+		//			QString("%1MB").arg(QString::number(size, 'f', 2)) :
+		//			QString(",%1MB").arg(QString::number(size, 'f', 2)));
+		//	}
+		//}	
+		tableItem = new QTableWidgetItem(sizeText);
+		//if (!video->sizes.empty()) {
+		//	tableItem->setToolTip(sizeText);
+		//}
 		tableItem->setTextAlignment(Qt::AlignCenter);
 		ui->myVideoTable->setItem(row, col++, tableItem);
 		auto action = new VideoActionWidget(ui->myVideoTable,
-			VideoActionWidget::ACTION_DOWNLOAD, video);
+			VideoActionWidget::ACTION_DOWNLOAD, video, 0);
 		//connect(action, SIGNAL(SignalDownload(int, const SharedVideoPtr&)),
 		//	this, SLOT(OnDownloadVideo(int, const SharedVideoPtr&)));
 		ui->myVideoTable->setCellWidget(row, col++, action);
 
 		mapMyVideos.insert(video->vid, item);
 
-		video->DownloadImage();
+		video->DownloadImage(video->rate);
 
 		if (focus) {
 			StartItemHighlight(video->vid);
@@ -666,20 +691,21 @@ bool MainWindow::InsertMyVideoItem(const SharedVideoPtr& video, bool focus)
 
 bool MainWindow::InsertDownloadItem(int rate, const SharedVideoPtr& video)
 {
+	QString vid = CreateVid(rate, video);
 	bool result = false;
 	do
 	{
 		if (!video) {
 			break;
 		}
-		auto item = mapLocalVideos.value(video->vid);
+		auto item = mapLocalVideos.value(vid.toStdString());
 		if (item) {
 			if (item->setVideoRate.contains(rate)) {
 				TipsWidget::ShowToast(ui->myvideo, QTStr("AlreadyDownloaded"));
 				break;
 			}
 		}	
-		item = mapDownloadVideos.value(video->vid);
+		item = mapDownloadVideos.value(vid.toStdString());
 		if (item) {
 			result = true;
 			TipsWidget::ShowToast(ui->myvideo, QTStr("AlreadyAppendDownloading"));
@@ -699,11 +725,15 @@ bool MainWindow::InsertDownloadItem(int rate, const SharedVideoPtr& video)
 		int col = 0;
 		item->item = new QTableWidgetItem;
 		ui->downloadVideoTable->setItem(row, col, item->item);
-		ui->downloadVideoTable->setCellWidget(row, col++, new VideoCoverWidget(ui->downloadVideoTable, false, video));
+		ui->downloadVideoTable->setCellWidget(row, col++, new VideoCoverWidget(ui->downloadVideoTable, false, video, rate));
 		QTableWidgetItem* tableItem = new QTableWidgetItem(QT_UTF8(video->title.c_str()));
+		//tableItem->setTextAlignment(Qt::AlignCenter);
 		ui->downloadVideoTable->setItem(row, col++, tableItem);
-		double size = video->size / (1024 * 1024);
-		tableItem = new QTableWidgetItem(QString("%1MB").arg(QString::number(size, 'f', 2)));
+		double size = video->size;
+		if (0 != rate && rate <= video->sizes.size()) {
+			size = video->sizes.at(rate - 1);
+		}
+		tableItem = new QTableWidgetItem(GetFileSizeStr(size));
 		tableItem->setTextAlignment(Qt::AlignCenter);
 		ui->downloadVideoTable->setItem(row, col++, tableItem);
 
@@ -711,10 +741,10 @@ bool MainWindow::InsertDownloadItem(int rate, const SharedVideoPtr& video)
 		ui->downloadVideoTable->setCellWidget(row, col++, status);
 
 		auto action = new VideoActionWidget(ui->downloadVideoTable,
-			VideoActionWidget::ACTION_DOWNLOADING, video);
+			VideoActionWidget::ACTION_DOWNLOADING, video, rate);
 		ui->downloadVideoTable->setCellWidget(row, col++, action);
 
-		mapDownloadVideos.insert(video->vid, item);
+		mapDownloadVideos.insert(vid.toStdString(), item);
 
 	} while (false);
 
@@ -725,13 +755,14 @@ bool MainWindow::InsertDownloadItem(int rate, const SharedVideoPtr& video)
 bool MainWindow::InsertLocalItem(int rate, const SharedVideoPtr& video)
 {
 	bool result = false;
+	QString vid = CreateVid(rate, video);
 	do
 	{
 		if (!video) {
 			break;
 		}
 		result = true;
-		auto item = mapLocalVideos.value(video->vid);
+		auto item = mapLocalVideos.value(vid.toStdString());
 		if (item) {
 			ui->localVideoTable->scrollToItem(item->item);
 			item->setVideoRate.insert(rate);
@@ -741,7 +772,7 @@ bool MainWindow::InsertLocalItem(int rate, const SharedVideoPtr& video)
 		{
 			QJsonObject obj;
 			QString localPath = App()->GetLocalPath();
-			QString fileName = QString("%1/%2.json").arg(localPath).arg(video->vid.c_str());
+			QString fileName = QString("%1/%2_%3.json").arg(localPath).arg(video->vid.c_str()).arg(rate);
 			if (QFile::exists(fileName)) {
 				QFile file(fileName);
 				if (!file.open(QFile::ReadOnly)) {
@@ -766,6 +797,13 @@ bool MainWindow::InsertLocalItem(int rate, const SharedVideoPtr& video)
 			if (!video->filePath.empty()) {
 				obj["path"] = QT_UTF8(video->filePath.c_str());
 			}
+			obj["mp4"] = QString::fromStdString(video->videoUrl);
+			obj["first_image"] = QString::fromStdString(video->imageUrl);
+			obj["title"] = QString::fromStdString(video->title);
+			obj["duration"] = QString::fromStdString(video->duration);
+			obj["seed"] = video->seed;
+			obj["df"] = video->rateCount;
+			obj["source_filesize"] = (double)video->size;
 			QFile file(fileName);
 			if (file.open(QFile::WriteOnly | QFile::Truncate)) {
 				QJsonDocument json(obj);
@@ -782,18 +820,23 @@ bool MainWindow::InsertLocalItem(int rate, const SharedVideoPtr& video)
 		int col = 0;
 		item->item = new QTableWidgetItem;
 		ui->localVideoTable->setItem(row, col, item->item);
-		ui->localVideoTable->setCellWidget(row, col++, new VideoCoverWidget(ui->localVideoTable, true, video));
+		ui->localVideoTable->setCellWidget(row, col++, new VideoCoverWidget(ui->localVideoTable, true, video, rate));
 		QTableWidgetItem* tableItem = new QTableWidgetItem(QT_UTF8(video->title.c_str()));
+		//tableItem->setTextAlignment(Qt::AlignCenter);
 		ui->localVideoTable->setItem(row, col++, tableItem);
-		double size = video->size / (1024 * 1024);
-		tableItem = new QTableWidgetItem(QString("%1MB").arg(QString::number(size, 'f', 2)));
+
+		double size = video->size;
+		if (0 != rate && rate <= video->sizes.size()) {
+			size = video->sizes.at(rate - 1);
+		}
+		tableItem = new QTableWidgetItem(GetFileSizeStr(size));
 		tableItem->setTextAlignment(Qt::AlignCenter);
 		ui->localVideoTable->setItem(row, col++, tableItem);
 
 		auto action = new VideoActionWidget(ui->localVideoTable,
-			VideoActionWidget::ACTION_LOCAL, video);
+			VideoActionWidget::ACTION_LOCAL, video, rate);
 		ui->localVideoTable->setCellWidget(row, col++, action);
-		mapLocalVideos.insert(video->vid, item);
+		mapLocalVideos.insert(vid.toStdString(), item);
 	} while (false);
 
 	ui->localvideo->SetTableEmpty(mapLocalVideos.isEmpty());
@@ -804,13 +847,29 @@ bool MainWindow::InsertLocalItem(int rate, const SharedVideoPtr& video)
 void MainWindow::UpdateItemTitle(QTableWidget* table, const QMap<std::string, SharedItemPtr>& map,
 	const std::string& vid, const std::string& title)
 {
-	auto item = map.value(vid);
-	if (!item) {
-		return;
+	for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
+		auto videoId = CreateVid(i, vid);
+		auto item = map.value(vid);
+		if (!item) {
+			continue;
+		}
+		QTableWidgetItem* tableItem = table->item(item->item->row(), 1);
+		if (tableItem) {
+			tableItem->setText(QT_UTF8(title.c_str()));
+		}
 	}
-	QTableWidgetItem* tableItem = table->item(item->item->row(), 1);
-	tableItem->setText(QT_UTF8(title.c_str()));
 }
+//void MainWindow::SelecteTableItem(QTableWidget* table, const SharedItemPtr& item, bool selecte)
+//{
+//	if (!table || !item || !item->item) {
+//		return;
+//	}
+//	item->item->setSelected(selecte);
+//	//auto tableItem = table->item(item->item->row(), 1);
+//	//if (tableItem) {
+//	//	tableItem->setSelected(selecte);
+//	//}
+//}
 
 void MainWindow::StartItemHighlight(const std::string& vid)
 {
@@ -819,8 +878,9 @@ void MainWindow::StartItemHighlight(const std::string& vid)
 		curHighlightVid = vid;
 	}
 	auto item = mapMyVideos.value(curHighlightVid);
-	if (item) {
-		ui->myVideoTable->item(item->item->row(), 1)->setSelected(true);// ui->myVideoTable->setItemSelected(ui->myVideoTable->item(item->item->row(), 1), true);
+	if (item && item->item) {
+		ui->myVideoTable->scrollTo(ui->myVideoTable->model()->index(item->item->row(), 0));
+		item->item->setSelected(true);
 		if (!itemHighlightTimer) {
 			itemHighlightTimer = new QTimer(this);
 			connect(itemHighlightTimer, SIGNAL(timeout()), this, SLOT(OnHighlightItem()));
@@ -836,11 +896,29 @@ void MainWindow::StopItemHighlight(void)
 		itemHighlightTimer->stop();
 	}
 	auto item = mapMyVideos.value(curHighlightVid);
-	if (item) {
-		ui->myVideoTable->item(item->item->row(), 1)->setSelected(false);// ui->myVideoTable->setItemSelected(ui->myVideoTable->item(item->item->row(), 1), false);
+	if (item && item->item) {
+		item->item->setSelected(false);
 	}
 	curHighlight = 0;
 	curHighlightVid = std::string();
+}
+
+void MainWindow::CloseDialogs()
+{
+	QList<QDialog*> childDialogs = this->findChildren<QDialog*>();
+	if (!childDialogs.isEmpty()) {
+		for (int i = 0; i < childDialogs.size(); ++i) {
+			childDialogs.at(i)->done(0);
+		}
+	}
+}
+QString MainWindow::CreateVid(int rate, const SharedVideoPtr& video)
+{
+	return CreateVid(rate, video->vid);
+}
+QString MainWindow::CreateVid(int rate, const std::string& vid)
+{
+	return QString("%1:%2").arg(vid.c_str()).arg(rate);
 }
 
 void MainWindow::TestMyVideoItem(void)

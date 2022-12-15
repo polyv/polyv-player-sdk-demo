@@ -1,8 +1,0 @@
-*.h text eol=lf
-*.c text eol=lf
-# **/include/curl/*.h text eol=crlf
-**/include/curl/curl.h              text eol=crlf
-**/include/openssl/dtls1.h          text eol=crlf
-**/include/openssl/opensslconf.h    text eol=crlf
-**/include/openssl/rand.h           text eol=crlf
-**/include/zconf.h                  text eol=crlf

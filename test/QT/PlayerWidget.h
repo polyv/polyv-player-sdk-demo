@@ -1,5 +1,6 @@
 #pragma once
 #include <QWidget>
+#include <QMenu>
 #include <QLabel>
 #include <QTimer>
 #include <QSlider>
@@ -10,87 +11,119 @@
 #include "AppDef.h"
 #include "VideoControl.h"
 
+
 class VolumeControl;
-class IPLVMediaPlayer;
+class SliderControl;
+class ParamDialog;
 
-
-class PlayerWidget : public QWidget {
+//////////////////////////////////////////////////
+class PlayerControl : public QStackedWidget {
 	Q_OBJECT
 public:
-	PlayerWidget(QWidget* parent = nullptr);
-	~PlayerWidget(void);
+	explicit PlayerControl(Player* _player, QWidget* parent = nullptr);
+	virtual ~PlayerControl(void);
 
-	void SetMainWindow(QWidget* win);
-
-	bool Play(bool local, const QString& token, const SharedVideoPtr& video, int seekMillisecond);
-	bool RePlay(int rate, int seekMillisecond, const QString& token, const SharedVideoPtr& video);
-	void Stop(void);
-	void Destroy(void);
-	bool LoadLocal(int opt, const SharedVideoPtr& video);
-	void UpdateOSD(void);
-	void UpdateCache(void);
-
-	void SetShowPlayer(bool show) {
-		isShowPlayer = show;
+public:
+	void SetInfo(bool local, int rate, const SharedVideoPtr& video);
+	void Reset();
+	void SetFilter(const QObject* object);
+	QObject* GetFilter() {
+		return filterObject;
 	}
+	void UpdatePos();
 
-	struct MediaProp {
-		int property;
-		int format;
-		QString value;
-	};
-	QMap<int, MediaProp> GetProps(void) const {
-		return mapProp;
-	}
-	
+	void OpenParamWindow();
+
 signals:
 	void SignalPropChange(int prop, const QString& value);
 	void SignalPropReset(void);
 protected:
-	virtual bool eventFilter(QObject *, QEvent *) override;
-private slots:
-	void OnPlayerStateHandler(int state);
-	void OnPlayerPropertyHandler(int property, int format, QString value);
-	void OnPlayerRateChangeHandler(int inputBitRate, int realBitRate);
-	void OnPlayerProgressHandler(int millisecond);
-    void OnPlayerAudioDeviceHandler(int audioDeviceCount);
-private:
-	void SetPanelVisible(bool visible);
-	void UpdatePanel(int rate, const SharedVideoPtr& video);
-	void UpdateControlPanel(bool move, bool resize);
-	void Reset(void);
-	void Test(void);
-private:
-	QLabel* timeLabel;
-	QWidget* rightWidget;
-	QWidget* playerWidget;
-	QWidget* controlWidget;
-	QWidget* controlBarWidget;
-	QPushButton* videoButton;
-	QPushButton* startButton;
-	QPushButton* stopButton;
-	QPushButton* volumeButton;
-	QPushButton* fullButton;
-	QTimer* hideTimer;
-	QTimer* volumeHideTimer;
-	QTimer* showControlTimer = nullptr;
-	QSlider *mediaSlide;
-	VolumeControl *volumePanel = nullptr;
+	bool eventFilter(QObject*, QEvent*) override;
 
-	QWidget* mainWindow = nullptr;
+private:
+	void SetRate(int rate, bool notify);
+	void SetSpeed(double speed);
+	void SetVisible(bool visible);
+	void SetBarVisible(bool visible);
 
-	SharedVideoPtr videoInfo;
-	int mediaDuration = 0;
-	QString duration;
-	int rateCount = VIDEO_RATE_BD;
+	struct MediaProperty {
+		int property;
+		int format;
+		QString value;
+	};
+	//QMap<int, MediaProperty> GetProperties(void) const {
+	//	return mapProperty;
+	//}
+private:
+	Player* player = nullptr;
+	QObject* filterObject = nullptr;
+
+	QWidget* barWidget = nullptr;
+
+	QMovie* loadingMovie = nullptr;
+	QWidget* loadingWidget = nullptr;
+
+	QPushButton* shotButton = nullptr;
+	QPushButton* volumeButton = nullptr;
+	QPushButton* speedButton = nullptr;
+	QPushButton* videoButton = nullptr;
+
+	QPointer<QMenu> popup = nullptr;
+
+	SliderControl* mediaSlide = nullptr;
+	VolumeControl* volumePanel = nullptr;
+
+	QTimer* shotPanelHideTimer = nullptr;
+	QTimer* volumePanelHideTimer = nullptr;
+
+	SharedVideoPtr curVideo;
 	int curRate = VIDEO_RATE_AUTO;
+	bool isLocalPlay = false;
+	bool isEnd = true;
 	double curSpeed = kSpeed10;
-	bool isLocal = false;
-	bool isShowControl = false;
-    bool hasAudioPlayDevice = true;
-	bool isShowPlayer = false;
-	PLVPlayerPtr mediaPlayer = nullptr;
 
-	
-	QMap<int, MediaProp> mapProp;
+	qint64 activeTime = 0;
+	QTimer* fullScreenTimer = nullptr;
+
+	QPointer<ParamDialog> paramDialog;
+	QMap<int, MediaProperty> mapProperty;
+};
+
+//////////////////////////////////////////////////
+class PlayerWidget : public QWidget {
+	Q_OBJECT
+public:
+	PlayerWidget(QWidget* parent = nullptr);
+	virtual ~PlayerWidget(void);
+
+public:
+	void SetFilter(const QObject* object);
+	QObject* GetFilter();
+	void UpdatePos();
+	void Destroy();
+
+	bool Play(bool local, const QString& token, const SharedVideoPtr& video, int rate, int seekMillisecond);
+	bool OnlineRePlay(int rate, int seekMillisecond, const QString& token, const SharedVideoPtr& video);
+
+	void Stop(void);
+	bool LoadLocal(const SharedVideoPtr& video);
+
+	void RefreshPlayer();
+
+	void OpenParamWindow();
+
+protected:
+	void paintEvent(QPaintEvent* e) override;
+	void closeEvent(QCloseEvent* e) override;
+private:
+	bool SetVideo(bool local, int rate, const SharedVideoPtr& video);
+	bool StartPlay(bool local, int rate, const QString& token, const SharedVideoPtr& video, int seekMillisecond);
+
+	//void SetPanelVisible(bool visible);
+	//void UpdatePanel(int rate, const SharedVideoPtr& video);
+	//void UpdateControlPanel(bool move, bool resize);
+	//void Reset(void);
+private:
+	Player* player = nullptr;
+	PlayerControl* controller = nullptr;
 };

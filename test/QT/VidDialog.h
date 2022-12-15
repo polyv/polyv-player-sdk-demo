@@ -20,6 +20,8 @@ private slots:
 	void on_get_clicked(void);
 	
 private:
+    void InitVid();
+private:
     Ui::VidDialog *ui;
 };
 

@@ -2,14 +2,12 @@
 #include "ui_SettingDialog.h"
 
 #include <QFileDialog>
+#include <QDesktopServices>
 
 #include "Application.h"
 #include "WidgetHelper.h"
 #include "SdkManager.h"
-#include "MainWindow.h"
 
-OSDConfig SettingDialog::osdConfig;
-CacheConfig SettingDialog::cacheConfig;
 
 SettingDialog::SettingDialog(QWidget *parent) 
 	: QDialog(parent)
@@ -25,21 +23,21 @@ SettingDialog::SettingDialog(QWidget *parent)
 	f |= Qt::FramelessWindowHint;
 #endif
 	setWindowFlags(f);
-	setAttribute(Qt::WA_DeleteOnClose, true);
+	//setAttribute(Qt::WA_DeleteOnClose, true);
 	ui->titleBar->Init(this, TITLE_CLOSE_BTN);
 	ui->titleBar->SetTitleable(true);
 	ui->titleBar->SetTitleName(QTStr("Setting"));
 	ui->titleBar->SetLogoable(false, QSize(188, 20));
 
-	SetComboxListView(ui->comboBox);
+	SetComboxListView(ui->taskCount);
 	const int maxCount = 6;
-	ui->comboBox->blockSignals(true);
+	ui->taskCount->blockSignals(true);
 	for (int i = 1; i <= maxCount; ++i) {
-		ui->comboBox->addItem(QString("%1").arg(i), i);
+		ui->taskCount->addItem(QString("%1").arg(i), i);
 	}
 	int count = App()->GlobalConfig().Get("Download", "TaskCount").toInt();
-	ui->comboBox->setCurrentIndex((count > 0 && count <= maxCount) ? count - 1 : 3 - 1);
-	ui->comboBox->blockSignals(false);
+	ui->taskCount->setCurrentIndex((count > 0 && count <= maxCount) ? count - 1 : 3 - 1);
+	ui->taskCount->blockSignals(false);
 
 	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
 	ui->pathEdit->setText(path);
@@ -53,15 +51,23 @@ SettingDialog::SettingDialog(QWidget *parent)
 #else
 	ui->recordEnable->setVisible(false);
 	ui->hdmi->setVisible(false);
+
+	while (ui->videoOutput->count() != 2) {
+		ui->videoOutput->removeItem(VIDEO_OUTPUT_GPU + 1);
+	}
 #endif // _WIN32
 
-	ui->comboBox_2->blockSignals(true);
+	ui->videoOutput->blockSignals(true);
 	int type = App()->GlobalConfig().Get("Video", "VideoOutput").toInt();
-	ui->comboBox_2->setCurrentIndex(type);
-	ui->comboBox_2->blockSignals(false);
+	ui->videoOutput->setCurrentIndex(type);
+	ui->videoOutput->blockSignals(false);
+
+
+	int seek = App()->GlobalConfig().Get("Video", "VideoPlaySeek").toInt();
+	ui->seek->setValue(seek);
 
 	InitOSDConfig();
-
+	InitLogoConfig();
 	InitCacheConfig();
 }
 
@@ -70,32 +76,14 @@ SettingDialog::~SettingDialog()
     delete ui;
 }
 
-void SettingDialog::SetOSDText(const QString& text)
-{
-	osdConfig.text = text;
-}
-
-OSDConfig& SettingDialog::GetOSDConfig()
-{
-	if (osdConfig.text.isEmpty()) {
-		osdConfig.text = SdkManager::GetManager()->GetAccount().viewerId;
-	}
-	return osdConfig;
-}
-
-CacheConfig& SettingDialog::GetCacheConfig()
-{
-	return cacheConfig;
-}
-
-void SettingDialog::on_ok_clicked(void)
+void SettingDialog::closeEvent(QCloseEvent* e)
 {
 	auto& config = App()->GlobalConfig();
 	int oldType = config.Get("Video", "VideoOutput").toInt();
 	auto oldKeepLastFrame = config.Get("Video", "KeepLastFrame").toBool();
 	auto oldHwdecEnable = config.Get("Video", "HwdecEnable").toBool();
-	int count = ui->comboBox->currentData().toInt();
-	int type = ui->comboBox_2->currentIndex();
+	int count = ui->taskCount->currentData().toInt();
+	int type = ui->videoOutput->currentIndex();
 	
 	config.Set("Download", "TaskCount", count);
 	config.Set("Download", "FilePath", QT_TO_UTF8(ui->pathEdit->text()));
@@ -104,6 +92,8 @@ void SettingDialog::on_ok_clicked(void)
 	config.Set("Video", "KeepLastFrame", ui->keepLastFrame->isChecked());
 	config.Set("Video", "VideoOutput", type);
 	config.Set("Video", "HwdecEnable", ui->hwdecEnable->isChecked());
+
+	config.Set("Video", "VideoPlaySeek", ui->seek->value());
 
 	if (oldHwdecEnable != ui->hwdecEnable->isChecked()) {
 		SdkManager::GetManager()->SetHwdecEnable();
@@ -115,12 +105,11 @@ void SettingDialog::on_ok_clicked(void)
 	config.Set("Video", "SoftwareRecord", ui->recordEnable->isChecked());
 	config.Set("Video", "HdmiCallback", ui->hdmi->isChecked());
 	if (oldRecord != ui->recordEnable->isChecked()) {
-		QMetaObject::invokeMethod(App()->GetMainWindow(), "OnUpdateSoftwareRecord", Qt::QueuedConnection,
-			Q_ARG(bool, ui->recordEnable->isChecked()));
+		SdkManager::GetManager()->SetSoftwareRecord((void*)((QWidget*)App()->GetMainWindow())->winId(),
+			ui->recordEnable->isChecked());
 	}
 	if (oldHdmi != ui->hdmi->isChecked()) {
-		QMetaObject::invokeMethod(App()->GetMainWindow(), "OnUpdateHdmiRecord", Qt::QueuedConnection,
-			Q_ARG(bool, ui->hdmi->isChecked()));
+		SdkManager::GetManager()->SetHdmiRecord(ui->hdmi->isChecked());
 	}
 #endif // _WIN32
 	
@@ -129,42 +118,40 @@ void SettingDialog::on_ok_clicked(void)
 		SdkManager::GetManager()->SetKeepLastFrame();
 	}
 	if (oldType != type) {
-		PLVSetSdkVideoOutputDevice((VIDEO_OUTPUT_DEVICE)type);
+		SdkManager::GetManager()->SetVideoOutputDevice((VIDEO_OUTPUT_DEVICE)type);
 	}
-	bool change = false;
-	if (cacheConfig.enable != ui->cache->isChecked()) {
-		change = true;
-		cacheConfig.enable = ui->cache->isChecked();
-	}
-	QString value = ui->cacheBytes->text();
-	if (value.toInt() != cacheConfig.maxCacheBytes) {
-		change = true;
-		cacheConfig.maxCacheBytes = value.toInt();
-	}
-	value = ui->cacheSeconds->text();
-	if (value.toInt() != cacheConfig.maxCacheSeconds) {
-		change = true;
-		cacheConfig.maxCacheSeconds = value.toInt();
-	}
-	cacheConfig.change = change;
+	auto & cacheConfig = Player::GetCacheConfig();
+	cacheConfig.enable = ui->cache->isChecked();
+	cacheConfig.maxCacheBytes = ui->cacheBytes->text().toInt();
+	cacheConfig.maxCacheSeconds = ui->cacheSeconds->text().toInt();
+	config.Set("Video", "EnableCache", cacheConfig.enable);
+	config.Set("Video", "MaxCacheBytes", cacheConfig.maxCacheBytes);
+	config.Set("Video", "MaxCacheSeconds", cacheConfig.maxCacheSeconds);
+	
+	auto & osdConfig = Player::GetOSDConfig();
 	osdConfig.enable = ui->osd->isChecked();
 	osdConfig.text = ui->osdText->text();
 	osdConfig.textSize = ui->osdTextSize->value();
 	osdConfig.textColor = ui->osdTextColor->text();
-	osdConfig.textAlpha = ui->osdTextAlpha->value();
-	osdConfig.border = ui->osdBorder->isChecked();
-	osdConfig.borderColor = ui->osdBorderColor->text();
-	osdConfig.borderAlpha = ui->osdBorderAlpha->value();
-	osdConfig.borderWidth = ui->osdBorderWidth->value();
+	osdConfig.borderSize = ui->osdBorderSize->value();
+	osdConfig.borderColor = ui->osdBorderColor->text();	
 	osdConfig.displayDuration = ui->osdDisplayDuration->value();
 	osdConfig.displayInterval = ui->osdDisplayInterval->value();
 	osdConfig.fadeDuration = ui->osdFadeDuration->value();
 	ui->osdRoll->isChecked() ? osdConfig.animationEffect = 0 : osdConfig.animationEffect = 1;
-	accept();
-}
-void SettingDialog::on_cancel_clicked(void)
-{
-	close();
+	config.Set("Video", "EnableOSD", osdConfig.enable);
+
+	auto & logoConfig = Player::GetLogoConfig();
+	logoConfig.enable = ui->logo->isChecked();
+	logoConfig.text = ui->logoText->text();
+	logoConfig.textFontName = ui->logoFontName->text();
+	logoConfig.textSize = ui->logoTextSize->value();
+	logoConfig.textColor = ui->logoTextColor->text();
+	logoConfig.borderSize = ui->logoBorderSize->value();
+	logoConfig.borderColor = ui->logoBorderColor->text();
+	logoConfig.alignX = ui->left == ui->alignX->checkedButton() ? -1 : (ui->right == ui->alignX->checkedButton() ? 1 : 0);
+	logoConfig.alignY = ui->top == ui->alignY->checkedButton() ? -1 : (ui->bottom == ui->alignY->checkedButton() ? 1 : 0);
+	config.Set("Video", "EnableLogo", logoConfig.enable);
 }
 
 void SettingDialog::on_pathButton_clicked()
@@ -178,8 +165,6 @@ void SettingDialog::on_pathButton_clicked()
 		return;
 	}
 	ui->pathEdit->setText(dir);
-	//App()->GlobalConfig().SetString("Download", "FilePath", QT_TO_UTF8(dir));
-	//App()->GlobalConfig().Save();
 }
 
 void SettingDialog::on_screenshotButton_clicked(void)
@@ -193,13 +178,34 @@ void SettingDialog::on_screenshotButton_clicked(void)
 		return;
 	}
 	ui->screenshotPath->setText(dir);
-	//App()->GlobalConfig().SetString("Player", "ScreenshotPath", QT_TO_UTF8(dir));
-	//App()->GlobalConfig().Save();
+}
+
+void SettingDialog::on_openShotDir_clicked()
+{
+	QString path = ui->screenshotPath->text();
+	if (path.isEmpty()) {
+		return;
+	}
+	QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+}
+
+void SettingDialog::on_openDownloadDir_clicked(void)
+{
+	QString path = ui->pathEdit->text();
+	if (path.isEmpty()) {
+		return;
+	}
+	QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
 void SettingDialog::on_osd_clicked(bool enable)
 {
 	ui->osdWidget->setEnabled(enable);
+}
+
+void SettingDialog::on_logo_clicked(bool enable)
+{
+	ui->logoWidget->setEnabled(enable);
 }
 
 void SettingDialog::on_cache_clicked(bool enable)
@@ -209,18 +215,13 @@ void SettingDialog::on_cache_clicked(bool enable)
 
 void SettingDialog::InitOSDConfig(void)
 {
-	if (osdConfig.text.isEmpty()) {
-		osdConfig.text = SdkManager::GetManager()->GetAccount().viewerId;
-	}
+	auto & osdConfig = Player::GetOSDConfig();
 	ui->osd->setChecked(osdConfig.enable);
 	ui->osdText->setText(osdConfig.text);
 	ui->osdTextSize->setValue(osdConfig.textSize);
 	ui->osdTextColor->setText(osdConfig.textColor);
-	ui->osdTextAlpha->setValue(osdConfig.textAlpha);
-	ui->osdBorder->setChecked(osdConfig.border);
 	ui->osdBorderColor->setText(osdConfig.borderColor);
-	ui->osdBorderAlpha->setValue(osdConfig.borderAlpha);
-	ui->osdBorderWidth->setValue(osdConfig.borderWidth);
+	ui->osdBorderSize->setValue(osdConfig.borderSize);
 	ui->osdDisplayDuration->setValue(osdConfig.displayDuration);
 	ui->osdDisplayInterval->setValue(osdConfig.displayInterval);
 	ui->osdFadeDuration->setValue(osdConfig.fadeDuration);
@@ -229,19 +230,31 @@ void SettingDialog::InitOSDConfig(void)
 	on_osd_clicked(osdConfig.enable);
 }
 
+void SettingDialog::InitLogoConfig(void)
+{
+	auto & logo = Player::GetLogoConfig();
+	ui->logo->setChecked(logo.enable);
+	ui->logoText->setText(logo.text);
+	ui->logoFontName->setText(logo.textFontName);
+	ui->logoTextSize->setValue(logo.textSize);
+	ui->logoTextColor->setText(logo.textColor);
+	ui->logoBorderColor->setText(logo.borderColor);
+	ui->logoBorderSize->setValue(logo.borderSize);
+
+	1 == logo.alignX ? ui->right->setChecked(true) :
+		(-1 == logo.alignX ? ui->left->setChecked(true) : ui->centerX->setChecked(true));
+	1 == logo.alignY ? ui->bottom->setChecked(true) :
+		(-1 == logo.alignY ? ui->top->setChecked(true) : ui->centerY->setChecked(true));
+
+	on_logo_clicked(logo.enable);
+}
+
 void SettingDialog::InitCacheConfig(void)
 {
-	ui->cache->setChecked(cacheConfig.enable);
-	cacheConfig.change = false;
-	QString value;
-	//if (0 != cacheConfig.maxCacheBytes) {
-		value = QString("%1").arg(cacheConfig.maxCacheBytes);
-	//}
-	ui->cacheBytes->setText(value);
-	value = QString();
-	//if (0 != cacheConfig.maxCacheSeconds) {
-		value = QString("%1").arg(cacheConfig.maxCacheSeconds);
-	//}
-	ui->cacheSeconds->setText(value);
-	on_cache_clicked(cacheConfig.enable);
+	auto & config = Player::GetCacheConfig();
+	ui->cache->setChecked(config.enable);
+	ui->cacheBytes->setText(QString("%1").arg(config.maxCacheBytes));
+	ui->cacheSeconds->setText(QString("%1").arg(config.maxCacheSeconds));
+
+	on_cache_clicked(config.enable);
 }

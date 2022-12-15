@@ -13,6 +13,8 @@
 #include "SdkManager.h"
 #include "Application.h"
 #include "SettingDialog.h"
+#include "MsgBoxDialog.h"
+
 static const char KStrKey[] = { 'K','P','l','v','P','l','a','y','e','r','S','t','r','K','e','y' };
 
 
@@ -26,12 +28,12 @@ LoginDialog::LoginDialog(QWidget *parent)
 	f |= Qt::Dialog;
 	f |= Qt::WindowCloseButtonHint;
 	f |= Qt::WindowMinimizeButtonHint;
-	f |= Qt::CustomizeWindowHint;
 	f |= Qt::WindowSystemMenuHint;
 #ifdef _WIN32
 	f |= Qt::FramelessWindowHint;
 #endif
 	setWindowFlags(f);
+
 	ui->titleBar->Init(this, TITLE_CLOSE_BTN | TITLE_MIN_BTN);
 	ui->titleBar->SetTitleable(false);
 	ui->titleBar->SetLogoable(false, QSize(188, 20));
@@ -44,7 +46,7 @@ LoginDialog::LoginDialog(QWidget *parent)
 
 	loginTimeout = new QTimer(this);
 	loginTimeout->setInterval(50 * 1000);
-	connect(loginTimeout, &QTimer::timeout, [this] {
+	connect(loginTimeout, &QTimer::timeout, this, [this] {
 		loginTimeout->stop();
 		ui->login->setEnabled(true);
 		SetError(QTStr("InitTimeout"));
@@ -81,6 +83,7 @@ LoginDialog::LoginDialog(QWidget *parent)
 #ifdef _DEBUG
 
 #endif// _DEBUG
+	setFixedSize(300, 402);/*fixed login dialog size! in order to adapt to multi screen drag!*/
 }
 
 LoginDialog::~LoginDialog()
@@ -127,7 +130,7 @@ void LoginDialog::on_login_clicked(void)
 	static bool init = false;
 	if (!init) {
 		init = true;
-		connect(SdkManager::GetManager(), &SdkManager::SignalInitResult, [this](bool result, const QString& msg) {
+		connect(SdkManager::GetManager(), &SdkManager::SignalInitResult, this, [this](bool result, const QString& msg) {
 			if (!loginTimeout->isActive()) {
 				return;
 			}
@@ -154,7 +157,6 @@ void LoginDialog::on_login_clicked(void)
 						infofile.close();
 					}
 				}
-				SettingDialog::SetOSDText(SdkManager::GetManager()->GetAccount().viewerId);
 				accept();
 				return;
 			}
@@ -163,7 +165,7 @@ void LoginDialog::on_login_clicked(void)
 	}
 	
 	SdkManager::GetManager()->Init(userId, secretKey, readToken);
-	SdkManager::GetManager()->SetViewer("test11111111", "testname11", "");
+	SdkManager::GetManager()->SetViewer("polyv", "polyv", "");
 }
 
 

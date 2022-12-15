@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 3.19)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(THIRD_PARTY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
-
-
+set(PLV_PLAYER_SDK_VERSION "2.2.0")
 cmake_policy(SET CMP0048 NEW)
+project(polyv-player-sdk-demo VERSION ${PLV_PLAYER_SDK_VERSION})
 
-project(polyv-player-sdk-demo)
+set(THIRD_PARTY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
+message(STATUS "THE PROJECT NAME: " ${PROJECT_NAME})
+message(STATUS "THE PROJECT VERSION: " ${PROJECT_VERSION})
 
+option(PLV_PLAYER_SDK_INSIDE  "define library inside" OFF)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -38,20 +40,39 @@ if(MSVC)
 endif()
 
 if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
 endif()
-
-configure_file("${CMAKE_SOURCE_DIR}/cmake/ALL_BUILD.vcxproj.user.in"
- "${CMAKE_BINARY_DIR}/ALL_BUILD.vcxproj.user")
 
 if (WIN32)
 elseif(APPLE)
     include(Helpers)
-    append_brew_pkg_path_to_env(curl)
-    append_brew_pkg_path_to_env(openssl@1.1)
 endif()
 add_subdirectory(deps)
 
+configure_file("${CMAKE_SOURCE_DIR}/cmake/ALL_BUILD.vcxproj.user.in"
+ "${CMAKE_BINARY_DIR}/ALL_BUILD.vcxproj.user")
+
 set(PLAYER_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/plv-player-sdk)
-add_subdirectory(test)
+add_subdirectory(test/QT)
+
+
+if(WIN32)
+    string(REGEX REPLACE
+        ".*/VC/Tools/MSVC/([0-9\\.]+)/bin/.*" "\\1"
+        MSVC_TOOL_VERSION "${CMAKE_AR}")
+    message("MSVC_TOOL_VERSION: ${MSVC_TOOL_VERSION}")
+    message("MSVC_TOOLSET_VERSION: ${MSVC_TOOLSET_VERSION}")
+    message("MSVC_VERSION: ${MSVC_VERSION}")
+    message("WINDOWS_SDK_VERSION: ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+    message("CMAKE_CXX_COMPILER_VERSION: ${CMAKE_CXX_COMPILER_VERSION}")
+    set(COMPILE_INFO_FILE "${CMAKE_BINARY_DIR}/compile_info.ini")
+    message("write compile info to ${COMPILE_INFO_FILE}")
+    file(WRITE "${COMPILE_INFO_FILE}"
+        "[Common]\n"
+        "MSVC_TOOL_VERSION=${MSVC_TOOL_VERSION}\n"
+        "MSVC_TOOLSET_VERSION=${MSVC_TOOLSET_VERSION}\n"
+        "MSVC_VERSION=${MSVC_VERSION}\n"
+        "WINDOWS_SDK_VERSION=${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}\n"
+        )
+endif()
 

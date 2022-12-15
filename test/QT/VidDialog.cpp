@@ -1,7 +1,7 @@
 #include "VidDialog.h"
 #include "ui_VidDialog.h"
 
-#include <QFileDialog>
+#include <QClipboard>
 
 #include "Application.h"
 #include "WidgetHelper.h"
@@ -23,13 +23,14 @@ VidDialog::VidDialog(QWidget *parent)
 	f |= Qt::FramelessWindowHint;
 #endif
 	setWindowFlags(f);
-	setAttribute(Qt::WA_DeleteOnClose, false);
+	//setAttribute(Qt::WA_DeleteOnClose, false);
 	ui->titleBar->Init(this, TITLE_CLOSE_BTN);
 	ui->titleBar->SetTitleable(true);
 	ui->titleBar->SetTitleName(QTStr("VIDPlay"));
 	ui->titleBar->SetLogoable(false, QSize(188, 20));
 
 	ui->vid->setFocus();
+	InitVid();
 }
 
 VidDialog::~VidDialog()
@@ -50,5 +51,26 @@ void VidDialog::on_get_clicked(void)
 		return;
 	}
 	accept();
+}
+
+void VidDialog::InitVid()
+{
+	do
+	{
+		QClipboard* clipboard = QGuiApplication::clipboard();
+		auto vid = clipboard->text();
+		auto ret = vid.split("_");
+		if (2 != ret.size()) {
+			break;
+		}
+		if (32 != ret.at(0).size()) {
+			break;
+		}
+		if (1 != ret.at(1).size()) {
+			break;
+		}
+		ui->vid->setText(vid);
+
+	} while (false);
 }
 

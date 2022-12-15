@@ -36,16 +36,16 @@
        <number>0</number>
       </property>
       <property name="leftMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="topMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="rightMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="bottomMargin">
-       <number>1</number>
+       <number>0</number>
       </property>
       <item>
        <widget class="TitleBar" name="titleBar" native="true">
@@ -130,8 +130,14 @@
              <property name="cursor">
               <cursorShape>PointingHandCursor</cursorShape>
              </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="text">
               <string>Enable</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
              </property>
              <property name="ButtonStyle" stdset="0">
               <string>normal</string>
@@ -149,8 +155,14 @@
              <property name="cursor">
               <cursorShape>PointingHandCursor</cursorShape>
              </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="text">
               <string>Disable</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
              </property>
              <property name="ButtonStyle" stdset="0">
               <string>blue</string>
@@ -168,8 +180,14 @@
              <property name="cursor">
               <cursorShape>PointingHandCursor</cursorShape>
              </property>
+             <property name="focusPolicy">
+              <enum>Qt::NoFocus</enum>
+             </property>
              <property name="text">
               <string>Ignore</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
              </property>
              <property name="ButtonStyle" stdset="0">
               <string>normal</string>

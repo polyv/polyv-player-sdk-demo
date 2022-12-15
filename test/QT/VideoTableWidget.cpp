@@ -45,7 +45,7 @@ VideoTableWidget::VideoTableWidget(QWidget* parent)
 	//QStackedLayout* layout = new QStackedLayout();
 	layout->setSpacing(0);
 	layout->setContentsMargins(0, 0, 0, 0);
-	layout->setStackingMode(QStackedLayout::StackAll);
+	layout->setStackingMode(QStackedLayout::StackOne);
 	//setLayout(layout);
 }
 
@@ -82,11 +82,11 @@ void VideoTableWidget::SetTableEmpty(bool empty)
 {
 	QStackedLayout* layout = (QStackedLayout*)this->layout();
 	if (empty) {
-		layout->setStackingMode(QStackedLayout::StackAll);
+		//layout->setStackingMode(QStackedLayout::StackOne);
 		setCurrentIndex(0);
 	}
 	else {
-		layout->setStackingMode(QStackedLayout::StackOne);
+		//layout->setStackingMode(QStackedLayout::StackOne);
 		setCurrentIndex(1);
 	}
 }

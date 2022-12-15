@@ -7,7 +7,11 @@
 #include "Application.h"
 #include "StatusButton.h"
 #include "WidgetHelper.h"
-#include "WindowHelper.h"
+//#include "WindowHelper.h"
+//#include "shadow-helper.h"
+#ifdef _WIN32
+#include "frameless-helper.h"
+#endif
 
 TitleBar::TitleBar(QWidget *parent) 
 	: QWidget(parent)
@@ -73,8 +77,17 @@ TitleBar::TitleBar(QWidget *parent)
 	closeBtn->setVisible(false);
 #endif
 	titleBg->setLayout(mainLayout);
+}
 
-	windowWidget = (QWidget*)GetRootParent(parent);
+TitleBar::~TitleBar()
+{
+#ifdef _WIN32
+	if (framelessHelper) {
+		framelessHelper->deleteLater();
+		framelessHelper = nullptr;
+	}
+#endif
+	
 }
 
 void TitleBar::Init(QWidget* parent, TitleBtnTypes type)
@@ -88,20 +101,44 @@ void TitleBar::Init(QWidget* parent, TitleBtnTypes type)
 	maximizeBtn->setVisible(maxable);
 	closeBtn->setVisible(closeable);
 #endif
+	maximizeBtn->disconnect();
+	minimizeBtn->disconnect();
+	closeBtn->disconnect();
 	if (minable) {
+		windowWidget->setWindowFlags(windowWidget->windowFlags() | Qt::WindowMinimizeButtonHint);
 		connect(minimizeBtn, SIGNAL(clicked()), windowWidget, SLOT(showMinimized()));
 	}
+	else {
+		windowWidget->setWindowFlags(windowWidget->windowFlags() & ~Qt::WindowMinimizeButtonHint);
+	}
 	if (maxable) {
-		connect(maximizeBtn, &QPushButton::clicked, [&](bool max) {
+		windowWidget->setWindowFlags(windowWidget->windowFlags() | Qt::WindowMaximizeButtonHint);
+		connect(maximizeBtn, &QPushButton::clicked, this, [this](bool max) {
 			max ? ShowMaximize() : ShowNormal();
 		});
-		connect(maximizeBtn, SIGNAL(clicked(bool)), this, SIGNAL(SignalMaximize(bool)));
+	}
+	else {
+		windowWidget->setWindowFlags(windowWidget->windowFlags() & ~Qt::WindowMaximizeButtonHint);
 	}
 	if (closeable) {
+		windowWidget->setWindowFlags(windowWidget->windowFlags() | Qt::WindowCloseButtonHint);
 		connect(closeBtn, SIGNAL(clicked()), this, SIGNAL(SignalClose()));
 		connect(closeBtn, SIGNAL(clicked()), windowWidget, SLOT(close()));
 	}
+	else {
+		windowWidget->setWindowFlags(windowWidget->windowFlags() & ~Qt::WindowCloseButtonHint);
+	}
 	windowWidget->installEventFilter(this);
+
+#ifdef _WIN32
+	if (framelessHelper) {
+		framelessHelper->Attach(windowWidget);
+	}
+	else {
+		SetResizable(false);
+	}
+#endif
+	
 }
 
 QPushButton* TitleBar::Button(TitleBtnTypes type)
@@ -120,50 +157,42 @@ QPushButton* TitleBar::Button(TitleBtnTypes type)
 
 void TitleBar::SetResizable(bool resizable)
 {
-	do
-	{
-		if (!windowWidget) {
-			break;
+#ifdef _WIN32
+	if (framelessHelper) {
+		framelessHelper->SetResizeable(resizable);
+		if (resizable) {
+			framelessHelper->SetTitleColor(QColor(15, 117, 255));
 		}
-		if (!resizable) {
-			if (!windowHelper) {
-				break;
-			}
-			windowHelper->RemoveFrom(windowWidget);
-			delete windowHelper;
-			windowHelper = nullptr;
-			break;
+	}
+	else {
+		framelessHelper = new FramelessHelper(this);
+		framelessHelper->SetTitleBar(this);
+		if (windowWidget) {
+			framelessHelper->Attach(windowWidget);
+		}	
+		framelessHelper->SetResizeable(resizable);
+		if (resizable) {
+			framelessHelper->SetTitleColor(QColor(15, 117, 255));
 		}
-		windowHelper = new WindowHelper(this);
-		windowHelper->ActivateOn(windowWidget);
-		windowHelper->SetWidgetMovable(false);
-		windowHelper->SetWidgetResizable(true);
-		windowHelper->SetBorderWidth(1);
-	} while (false);
+		framelessHelper->SetFrameColor(QColor(255, 255, 255));
+	}
+#endif
 }
-bool TitleBar::IsResizable(void) const
+#ifdef _WIN32
+void TitleBar::SetResizeTitleColor(const QColor& color)
 {
-	return windowHelper ? true : false;
-}
-
-void TitleBar::SetSimplifyMode(bool mode)
-{
-	isSimplifyMode = mode;
-	if (windowHelper) {
-		windowHelper->SetWidgetResizable(!mode);
+	if (framelessHelper) {
+		framelessHelper->SetTitleColor(color);
 	}
 }
-bool TitleBar::IsSimplifyMode(void) const
+void TitleBar::SetResizeFrameColor(const QColor& color)
 {
-	return isSimplifyMode;
-}
-
-void TitleBar::SetFullScreen(bool full)
-{
-	if (windowHelper) {
-		windowHelper->SetWidgetResizable(!full);
+	if (framelessHelper) {
+		framelessHelper->SetFrameColor(color);
 	}
 }
+#endif
+
 
 void TitleBar::ShowNormal(void)
 {
@@ -173,6 +202,29 @@ void TitleBar::ShowNormal(void)
 void TitleBar::ShowMaximize(void)
 {
 	windowWidget->showMaximized();
+}
+
+void TitleBar::ShowFullScreen(bool fullscreen)
+{
+	if (fullscreen) {
+		if (IsMaximize()) {
+			isFullscreenMax = true;
+		}
+		setVisible(false);
+		windowWidget->showFullScreen();
+	}
+	else {
+		if (isFullscreenMax) {
+			ShowMaximize();
+		}
+		else {
+			ShowNormal();
+		}
+		isFullscreenMax = false;
+		setVisible(true);
+	}
+	
+
 }
 
 void TitleBar::SetLogoable(bool enable, const QSize& size)
@@ -228,57 +280,26 @@ QHBoxLayout* TitleBar::GetRightLayout(void) const
 	return (QHBoxLayout*)rightExtendWidget->layout();
 }
 
-
-void TitleBar::mousePressEvent(QMouseEvent *e)
-{
-	if (Qt::LeftButton == (e->buttons() & Qt::LeftButton)) {
-		isPressed = true;
-	}
-	startPos = e->globalPos();
-	clickPos = mapToParent(e->pos())/* + QPoint(16, 16)*/;
-	//e->ignore();
-	return QWidget::mousePressEvent(e);
-}
-void TitleBar::mouseMoveEvent(QMouseEvent* e)
-{
-	do
-	{
-		if (!windowWidget || !isPressed) {
-			break;
-		}
-		if (!isMoving) {
-			isMoving = true;
-			if (IsMaximize() && !IsSimplifyMode()) {
-				//auto pos = e->globalPos() - clickPos;
-				//if (pos.x() > 3 || pos.y() > 3) {
-				windowWidget->showNormal();
-				//SetMaximizeStatus(false);
-				//}
-			}
-		}			
-		windowWidget->move(e->globalPos() - clickPos);
-	} while (false);
-	return QWidget::mousePressEvent(e);
-}
-void TitleBar::mouseReleaseEvent(QMouseEvent *e)
-{
-	isMoving = false;
-	isPressed = false;
-	//isDoubleClick = false;
-	return QWidget::mouseMoveEvent(e);
-}
-
-void TitleBar::mouseDoubleClickEvent(QMouseEvent *e)
-{
-	if (!IsSimplifyMode() && (maximizeBtn && maximizeBtn->isVisible())) {
-		isMoving = false;
-		isPressed = false;
-		//isDoubleClick = true;
-		maximizeBtn->click();
-		return;
-	}
-	return QWidget::mouseDoubleClickEvent(e);
-}
+//
+//
+//void TitleBar::mouseMoveEvent(QMouseEvent* e)
+//{
+//	do
+//	{
+//		if (!windowWidget || !isPressed) {
+//			break;
+//		}
+//		if (!isMoving) {
+//			isMoving = true;
+//			if (IsMaximize()) {
+//				windowWidget->showNormal();
+//			}
+//		}			
+//		windowWidget->move(e->globalPos() - clickPos);
+//	} while (false);
+//	return QWidget::mousePressEvent(e);
+//}
+//
 
 bool TitleBar::eventFilter(QObject* obj, QEvent* e)
 {
@@ -290,16 +311,8 @@ bool TitleBar::eventFilter(QObject* obj, QEvent* e)
 		if (QEvent::WindowStateChange != e->type()) {
 			break;
 		}
-		switch (windowWidget->windowState())
-		{
-		case Qt::WindowMaximized:
-			SetMaximizeStatus(true);
-			//ShowMaximize();
-			break;
-		default:
-			SetMaximizeStatus(false);
-			break;
-		}
+		SetMaximizeStatus(Qt::WindowMaximized == 
+			(windowWidget->windowState() & Qt::WindowMaximized) ? true : false);
 	} while (false);
 	return QWidget::eventFilter(obj, e);
 }
@@ -308,7 +321,6 @@ bool TitleBar::eventFilter(QObject* obj, QEvent* e)
 CustomTitle::CustomTitle(QWidget* parent) :
 	TitleBar(parent)
 {
-	Init((QWidget*)GetRootParent(parent), TITLE_CLOSE_BTN);
 	SetResizable(false);
 	SetLogoable(false, QSize());
 	SetTitleable(true);

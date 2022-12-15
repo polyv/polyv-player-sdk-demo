@@ -26,7 +26,8 @@ MsgBoxDialog::MsgBoxDialog(QWidget *parent, const QString& text,
 #endif
 	setWindowFlags(f);
 	//setAttribute(Qt::WA_DeleteOnClose, true);
-	ui->titleBar->SetTitleName(title);
+	ui->titleBar->Init(this, TITLE_CLOSE_BTN);
+	ui->titleBar->SetTitleName(title.isEmpty() ? tr("SystemTip") : title);
 	setWindowTitle(ui->titleBar->GetTitleName());
 	
 	ui->label->setText(text);
@@ -37,8 +38,8 @@ MsgBoxDialog::MsgBoxDialog(QWidget *parent, const QString& text,
 	ui->buttonBox->layout()->setSpacing(16);
 	ok->setMinimumSize(QSize(96, 32));
 	cancel->setMinimumSize(QSize(96, 32));
-	ok->setText(okText);
-	cancel->setText(cancelText);
+	ok->setText(okText.isEmpty() ? tr("OK") : okText);
+	cancel->setText(cancelText.isEmpty() ? tr("Cancel") : cancelText);
 	ok->setDefault(false);
 	cancel->setDefault(false);
 	ok->setProperty("ButtonStyle", "normal");
@@ -58,7 +59,7 @@ MsgBoxDialog::MsgBoxDialog(QWidget *parent, const QString& text,
 		ui->label->setText(text + QString("(%1s)").arg(seconds));
 		ui->label->setProperty("time", seconds);
 		QTimer* countDown = new QTimer(this);
-		connect(countDown, &QTimer::timeout, [=] {
+		connect(countDown, &QTimer::timeout, this, [this, text, countDown, ok, cancel] {
 			uint time = ui->label->property("time").toUInt();
 			time--;
 			if (time > 0) {
@@ -78,7 +79,7 @@ MsgBoxDialog::MsgBoxDialog(QWidget *parent, const QString& text,
 		countDown->start(1000);
 	}
 
-	connect(ui->titleBar, &CustomTitle::SignalClose, [this] {
+	connect(ui->titleBar, &CustomTitle::SignalClose, this, [this] {
 		setProperty("isClose", true);
 	});
 }

@@ -6,7 +6,8 @@ ToolButton::ToolButton(QWidget*parent)
 	: QToolButton(parent)
 {
 	installEventFilter(this);
-	setCursor(Qt::PointingHandCursor);
+	setCursor(QCursor(Qt::PointingHandCursor));
+	setFocusPolicy(Qt::NoFocus);
 }
 
 void ToolButton::SetNormalIcon(const QString& iconNormal, const QString& iconActive)

@@ -79,5 +79,9 @@
         <file>data/locale/zh-CN.ini</file>
         <file>data/themes/Default.qss</file>
         <file>images/control/slider_handle.png</file>
+        <file>images/player/loading.gif</file>
+        <file>images/control/icon_copy_hover.svg</file>
+        <file>images/control/icon_copy_normal.svg</file>
+        <file>images/common/shadow.png</file>
     </qresource>
 </RCC>

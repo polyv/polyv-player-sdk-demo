@@ -33,7 +33,7 @@ public:
 	void Start(void);
 	void Stop(void);
 
-	int AppendTask(const SharedVideoPtr& video, const std::string& url, const std::string& filename);
+	int AppendTask(int rate, const SharedVideoPtr& video, const std::string& url, const std::string& filename);
 
 private:
 	void Run(void);
@@ -47,12 +47,14 @@ private:
 	//FILE* file = NULL;
 	struct Item {
 		int taskId = 0;
+		int rate;
 		std::string url;
 		std::string filename;
 		SharedVideoPtr video;
 		Item() {}
-		Item(int id, const std::string& _url, const std::string& _file, const SharedVideoPtr& _video) {
+		Item(int id, int _rate, const std::string& _url, const std::string& _file, const SharedVideoPtr& _video) {
 			taskId = id;
+			rate = _rate;
 			url = _url;
 			filename = _file;
 			video = _video;
@@ -98,23 +100,24 @@ public:
 	int seed = 0;
 	int rate = VIDEO_RATE_AUTO;
 	int rateCount = 0;
-	long size = 0;
+	long long size = 0;
+	std::vector<long long> sizes;
 
 	int downloadStatus = DOWNLOAD_OK;
 
 	int taskId = 0;
 	
-	bool SetTitle(const std::string& title, bool signal = true);
-	bool SetImage(const std::string& url);
-	bool SetDownloadStatus(int status, bool signal = true);
+	bool SetTitle(const std::string& title, int rate, bool signal = true);
+	bool SetImage(const std::string& url, int rate);
+	bool SetDownloadStatus(int status, int rate, bool signal = true);
 
-	void DownloadImage(void);
-	void DownloadImageResult(int taskId, bool result);
+	void DownloadImage(int rate);
+	void DownloadImageResult(int taskId, bool result, int rate);
 signals:
-	void SignalAttributeChanged(int attribute, const SharedVideoPtr& video);
+	void SignalAttributeChanged(int attribute, const SharedVideoPtr& video, int rate);
 
 private slots:
-	void OnDownloadImage(std::string fileName);
+	void OnDownloadImage(std::string fileName, int rate);
 private:
 	std::string filename;
 
@@ -127,11 +130,12 @@ private:
 class VideoCoverWidget : public QWidget {
 	Q_OBJECT
 public:
-	VideoCoverWidget(QWidget* parent, bool local, const SharedVideoPtr& video);
+	VideoCoverWidget(QWidget* parent, bool local, const SharedVideoPtr& video, int rate);
 
 private slots:
-	void OnAttributeChanged(int attribute, const SharedVideoPtr& video);
+	void OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate);
 private:
+	int curRate;
 	bool localPlay;
 	QLabel* imageLabel = nullptr;
 	SharedVideoPtr videoInfo;
@@ -147,7 +151,7 @@ protected:
 	virtual void resizeEvent(QResizeEvent *event) override;
 
 private slots:
-	void OnAttributeChanged(int attribute, const SharedVideoPtr& video);
+	void OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate);
 private:
 	QLabel* vidLabel = nullptr;
 	QLabel* textLabel = nullptr;
@@ -163,16 +167,16 @@ public:
 
 private slots:
 	void OnDownloadErrorHandler(int code);
-	void OnDownloadProgressHandler(long long receivedBytes, long long totalBytes);
+	void OnDownloadProgressHandler(qint64 receivedBytes, qint64 totalBytes);
 	void OnDownloadResultHandler(int rate, int code);
 
-	void OnAttributeChanged(int attribute, const SharedVideoPtr& video);
+	void OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate);
 
 	void OnSpeedTimer(void);
 private:
 	int curRate;
 	SharedVideoPtr videoInfo;
-	PLVDownloadPtr downloadObj = nullptr;
+	Downloader* downloader = nullptr;
 	QProgressBar* progressBar;
 	QLabel* tipsLabel;
 	QLabel* speedLabel;
@@ -192,11 +196,12 @@ public:
 		ACTION_DOWNLOAD,
 		ACTION_DOWNLOADING,
 	};
-	VideoActionWidget(QWidget* parent, ActionType action, const SharedVideoPtr& video);
+	VideoActionWidget(QWidget* parent, ActionType action, const SharedVideoPtr& video, int rate);
 
 private slots:
-	void OnAttributeChanged(int attribute, const SharedVideoPtr& video);
+	void OnAttributeChanged(int attribute, const SharedVideoPtr& video, int rate);
 private:
+	int curRate = 0;
 	ActionType actionType;
 	SharedVideoPtr videoInfo;
 	QPushButton* downloadBtn;

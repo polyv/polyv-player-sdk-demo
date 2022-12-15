@@ -15,6 +15,7 @@
 #include <shlobj.h>
 #include <Dwmapi.h>
 //#include <dump/EduDump.h>
+#include "frameless-helper.h"
 #endif // WIN32
 #include <http/http-manager.h>
 
@@ -25,28 +26,38 @@
 #include "MainWindow.h"
 #include "platform.h"
 
+
+// test
+#include "MultiPlayerDialog.h"
+
 extern void LogMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+	QString logMessage = qFormatLogMessage(type, context, msg);
+	std::string log = logMessage.toStdString();
 	switch (type)
 	{
 	case QtInfoMsg:
-		slog(SLOG_INFO, "[qt]:%s", QT_TO_UTF8(qFormatLogMessage(type, context, msg)));
+		slog(SLOG_INFO, "[qt]:%s", log.c_str());
 		break;
 	case QtWarningMsg:
 		if (!msg.contains("was loaded over HTTPS", Qt::CaseInsensitive)) {
-			slog(SLOG_WARN, "[qt]:%s", QT_TO_UTF8(qFormatLogMessage(type, context, msg)));
+			slog(SLOG_WARN, "[qt]:%s", log.c_str());
 		}
 		break;
 	case QtCriticalMsg:
-		slog(SLOG_ERROR, "[qt]:%s", QT_TO_UTF8(qFormatLogMessage(type, context, msg)));
+		slog(SLOG_ERROR, "[qt]:%s", log.c_str());
 		break;
 	case QtFatalMsg:
-		slog(SLOG_FATAL, "[qt]:%s", QT_TO_UTF8(qFormatLogMessage(type, context, msg)));
+		slog(SLOG_FATAL, "[qt]:%s", log.c_str());
 		break;	
 	default:
-		slog_debug(QT_TO_UTF8(qFormatLogMessage(type, context, msg)));
+		slog_debug(log.c_str());
+#ifdef Q_OS_WIN
+		OutputDebugString(reinterpret_cast<const wchar_t*>(logMessage.utf16()));
+#endif
 		break;
 	}
+    //qt_message_output(type, context, msg);
 }
 
 Application::Application(int &argc, char **argv) 
@@ -67,18 +78,17 @@ Application::Application(int &argc, char **argv)
 	logPath += APP_PROJECT_NAME;
 	logPath += "/logs";
 	QDir().mkpath(logPath);
-#ifdef _WIN32
-	slog_init(logPath.toLocal8Bit(), nullptr);
-#else
 	slog_init(logPath.toUtf8(), nullptr);
-#endif // _WIN32
-	qInstallMessageHandler(LogMessage);
 
 #ifdef _WIN32
+	qInstallMessageHandler(LogMessage);
 	setFont(QFont("Microsoft YaHei"));
 #endif
 #ifdef __APPLE__
 	setFont(QFont("PingFang SC"));
+#ifndef _DEBUG
+	qInstallMessageHandler(LogMessage);
+#endif
 #endif
 
 	QApplication::setStyle(QStyleFactory::create("Fusion"));
@@ -94,8 +104,8 @@ Application::~Application()
 		globalConfig.Save();
 	}
 	globalConfig.Close();
-	HttpManager::Destory();
 	SdkManager::CloseManager();
+	HttpManager::Destory();
 	slog_info("app exit");
 	slog_release();
 }
@@ -133,6 +143,10 @@ int Application::AppRun()
 		slog_info("app run ok");
 		Translator translator;
 		installTranslator(&translator);
+		{// test
+			//MultiPlayerDialog dlg;
+			//dlg.exec();
+		}
 		{
 			LoginDialog dlg;
 			dlg.setWindowTitle(QTStr("MainTitle"));
@@ -159,6 +173,7 @@ int Application::AppRun()
 		mainWindow->setWindowTitle(QTStr("MainTitle"));
 		mainWindow->setAttribute(Qt::WA_DeleteOnClose, true);
 		connect(mainWindow, SIGNAL(destroyed()), this, SLOT(quit()));
+		//connect(mainWindow, SIGNAL(destroyed()), this, SLOT(OnDestroyWindow()), Qt::QueuedConnection);
 
 		if (!mainWindow->Init()) {
 			QMessageBox::critical(nullptr, QTStr("SystemError"), QTStr("CannotInitWindows"));
@@ -202,7 +217,7 @@ bool Application::InitConfig()
 	QDir().mkpath(videoPath);
 	globalConfig.SetDefault("Download", "ScreenshotPath", videoPath);
 
-	globalConfig.SetDefault("Video", "HwdecEnable", true);
+	globalConfig.SetDefault("Video", "HwdecEnable", false);
 	globalConfig.SetDefault("Video", "KeepLastFrame", true);
 #ifdef _WIN32
 	globalConfig.SetDefault("Video", "SoftwareRecord", true);
@@ -210,6 +225,11 @@ bool Application::InitConfig()
 #endif
 
 	return globalConfig.IsOpen();
+}
+void Application::OnDestroyWindow()
+{
+	SdkManager::CloseManager();
+	quit();
 }
 
 bool Application::InitTheme()
