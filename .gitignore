@@ -3,6 +3,8 @@
 *.so
 
 #cmake
+/plv-player-sdk/
+/thirdparty/
 /cmbuild/
 /test/C#/.vs
 /test/C#/polyv-player-demo-csharp/bin
