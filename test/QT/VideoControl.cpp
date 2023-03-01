@@ -87,11 +87,7 @@ void DownloadManager::Run()
 		}
 		HttpClient client(item.url.c_str(), HTTP_DOWNLOAD);
 		client.SetCaFile(QT_TO_UTF8(App()->GetCacertFilePath()));
-#ifdef _WIN32
-		std::string filename = QT_UTF8(item.filename.c_str()).toLocal8Bit();
-#else
-		std::string filename = item.filename.c_str();
-#endif // _WIN32
+		std::string filename = QString::fromStdString(item.filename).toStdString();
 		client.SetDownload(filename.c_str(), nullptr, nullptr);
 		std::string result;
 		if (!client.Request(result)) {

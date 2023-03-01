@@ -11,7 +11,7 @@ if(MSVC)
         set(PLAYER_SDK_DIR ${CMAKE_SOURCE_DIR}/plv-player-sdk/windows/x86)
     endif()
 elseif(APPLE)
-    set(DOWNLOAD_SDK_URL https://soft.polyv.net/soft/VodPCPlayer/PCPlayerSDK/${PLV_PLAYER_SDK_VERSION}/Mac/PCPlayerSDK-Mac-x64.7z)
+    set(DOWNLOAD_SDK_URL https://soft.polyv.net/soft/VodPCPlayer/PCPlayerSDK/${PLV_PLAYER_SDK_VERSION}/Mac/PCPlayerSDK-Mac-x64.zip)
     set(PLAYER_SDK_DIR ${CMAKE_SOURCE_DIR}/plv-player-sdk/mac)
 endif()
 
