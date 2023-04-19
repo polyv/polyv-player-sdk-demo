@@ -31,6 +31,8 @@ public:
 	void SetKeepLastFrame(void);
 	void SetVideoOutputDevice(VIDEO_OUTPUT_DEVICE type, const QString& context = QString());
 	bool CheckFileComplete(const QString& vid, const QString& path, int rate);
+	void SetDebugLog();
+	void SetRetryCount(int count);
 
 	Account GetAccount(void) const {
 		return account;

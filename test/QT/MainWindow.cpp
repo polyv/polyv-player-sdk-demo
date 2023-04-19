@@ -267,6 +267,11 @@ void MainWindow::OnShowToast(const QString& msg)
 
 void MainWindow::OnPlayVideo(bool local, const SharedVideoPtr& video, int rate)
 {
+	if (ui->player->IsLoading()) {
+		OnShowTips(TipsWidget::TIP_WARN, QTStr("PlayerLoading"));
+		return;
+	}
+	ShowPlayer();
 	QString token;
 	if (!local && 1 == video->seed) {
 		token = GetToken(QT_UTF8(video->vid.c_str()));
@@ -274,10 +279,10 @@ void MainWindow::OnPlayVideo(bool local, const SharedVideoPtr& video, int rate)
 	int seek = App()->GlobalConfig().Get("Video", "VideoPlaySeek").toInt();
 	if (!ui->player->Play(local, token, video, rate, seek * 1000)) {
 		OnShowTips(TipsWidget::TIP_ERROR, QTStr("PlayerError"));
+		ShowListVideo();
 		return;
 	}
 	ui->titleBar->SetTitleName(QT_UTF8(video->title.c_str()));
-	ShowPlayer();
 }
 
 void MainWindow::OnChangeRatePlayVideo(int rate, int seekMillisecond, const SharedVideoPtr& video)

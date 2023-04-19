@@ -213,12 +213,19 @@ void MyVideoList::Request(int page, int count, const QString& vid)
 	QString sign = QCryptographicHash::hash(QT_TO_UTF8(temp), QCryptographicHash::Sha1).toHex().toUpper();
 	param.Append("sign", QT_TO_UTF8(sign));
 
-	qDebug() << url << "?" << param.ToHttp().c_str();
+	qInfo() << url << "?" << param.ToHttp().c_str();
 	std::string result;
 	HttpClient client(QT_TO_UTF8(url) + std::string("?") + param.ToHttp(), HTTP_GET, &isExit);
 	client.SetCaFile(QT_TO_UTF8(App()->GetCacertFilePath()));
 	bool ret = client.Request(result);
-	ParseResult(ret, page, count, QT_UTF8(result.c_str()));
+	if (!ret) {
+		qCritical() << "http request error:" << client.GetErrorString().c_str();
+		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), "OnShowTips", Qt::QueuedConnection,
+			Q_ARG(int, TipsWidget::TIP_WARN), Q_ARG(const QString&, QTStr("RequestListVideoError")));
+	}
+	else {
+		ParseResult(ret, page, count, QT_UTF8(result.c_str()));
+	}
 }
 
 void MyVideoList::ParseResult(bool result, int page, int count, const QString& data)

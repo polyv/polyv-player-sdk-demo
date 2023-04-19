@@ -438,25 +438,27 @@ VideoDownloadWidget::VideoDownloadWidget(QWidget* parent, const SharedVideoPtr& 
 	connect(downloader, &Downloader::SignalResult, this, &VideoDownloadWidget::OnDownloadResultHandler);
 	connect(downloader, &Downloader::SignalProgress, this, &VideoDownloadWidget::OnDownloadProgressHandler);
 
-	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
-	video->filePath = QT_TO_UTF8(path);
-	video->rate = rate;
-	downloader->SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
-	int code = downloader->Start(true);
-	if (E_NO_ERR != code) {
-		tipsLabel->setText(QTStr("DownloadError"));
-		SetControlSheet(tipsLabel, "LabelStyle", "error");
-	}
-	else {
-		//tipsLabel->setText(QTStr("DownloadWait"));
-	}
 	connect(video.get(), SIGNAL(SignalAttributeChanged(int, const SharedVideoPtr&, int)),
 		this, SLOT(OnAttributeChanged(int, const SharedVideoPtr&, int)), Qt::QueuedConnection);
 
 	speedTimer = new QTimer(this);
 	speedTimer->setInterval(1000);
 	connect(speedTimer, SIGNAL(timeout()), this, SLOT(OnSpeedTimer()));
-	speedTimer->start();
+
+	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
+	video->filePath = QT_TO_UTF8(path);
+	video->rate = rate;
+	downloader->SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
+	int code = downloader->Start(true);
+
+	if (E_NO_ERR != code) {
+		tipsLabel->setText(QTStr("DownloadError"));
+		SetControlSheet(tipsLabel, "LabelStyle", "error");
+		speedLabel->setText(QString());
+	}
+	else {
+		speedTimer->start();
+	}
 }
 
 VideoDownloadWidget::~VideoDownloadWidget()

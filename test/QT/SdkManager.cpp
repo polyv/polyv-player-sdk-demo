@@ -27,15 +27,17 @@ SdkManager::SdkManager(void)
 	logFile += QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
 	logFile += "_sdk.log";
 	SDK_CALL(PLVSetSdkLogFile(QT_TO_UTF8(logFile)));
-	SDK_CALL(PLVSetSdkLogLevel(LOG_FILTER_DEBUG));
 	SDK_CALL(PLVSetSdkHttpRequest(httpRequest));
 	SDK_CALL(PLVSetSdkCacertFile(QT_TO_UTF8(App()->GetCacertFilePath())));
 	
+	SetDebugLog();
 	SetHwdecEnable();
 	SetKeepLastFrame();
 
 	int type = App()->GlobalConfig().Get("Video", "VideoOutput").toInt();
 	SetVideoOutputDevice(VIDEO_OUTPUT_DEVICE(type));
+
+	SetRetryCount(App()->GlobalConfig().Get("Download", "RetryCount").toInt());
 
 	auto & osd = Player::GetOSDConfig();
 	osd.enable = App()->GlobalConfig().Get("Video", "EnableOSD", true).toBool();
@@ -125,6 +127,18 @@ void SdkManager::SetVideoOutputDevice(VIDEO_OUTPUT_DEVICE type, const QString& c
 bool SdkManager::CheckFileComplete(const QString& vid, const QString& path, int rate)
 {
 	return PLVCheckFileComplete(vid.toStdString().c_str(), path.toStdString().c_str(), rate);
+}
+void SdkManager::SetDebugLog()
+{
+	SDK_CALL(PLVSetSdkLogLevel(
+		App()->GlobalConfig().Get("App", "EnableDebugLog", true).toBool() ? LOG_FILTER_DEBUG : LOG_FILTER_INFO));
+	if (App()->GlobalConfig().Get("App", "EnableDebugLog", true).toBool()) {
+		slog_set_level(SLOG_DEBUG);
+	}
+}
+void SdkManager::SetRetryCount(int count)
+{
+	SDK_CALL(PLVSetSdkRetryAttempts(0 == count ? 0xFFFFFFFF : count, 500, 25000));
 }
 
 #ifdef _WIN32

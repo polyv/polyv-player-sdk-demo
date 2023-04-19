@@ -10,8 +10,8 @@ endif()
 
 set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "Generated Files")
 set(CMAKE_AUTOMOC ON)
-# set(CMAKE_AUTORCC ON) # incompatible of VS 2017
-# set(CMAKE_AUTOUIC ON) # incompatible of VS 2017
+#set(CMAKE_AUTORCC ON) # incompatible of VS 2017
+#set(CMAKE_AUTOUIC ON) # incompatible of VS 2017
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 if(DEFINED QTDIR${APP_SUFFIX})

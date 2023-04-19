@@ -13,7 +13,7 @@ struct PlayerOSDConfig {
 	int animationEffect = 0;
 	int displayDuration = 5;
 	int displayInterval = 1;
-	int fadeDuration = 1;
+	int fadeDuration = 3;
 
 	bool enable = true;
 };

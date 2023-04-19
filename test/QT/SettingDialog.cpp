@@ -39,12 +39,25 @@ SettingDialog::SettingDialog(QWidget *parent)
 	ui->taskCount->setCurrentIndex((count > 0 && count <= maxCount) ? count - 1 : 3 - 1);
 	ui->taskCount->blockSignals(false);
 
+	SetComboxListView(ui->retry);
+	ui->retry->blockSignals(true);
+	for (int i = 0; i <= maxCount; ++i) {
+		ui->retry->addItem(0 == i ? QTStr("UnlimitRetry") : QString("%1").arg(i), i);
+	}
+	count = App()->GlobalConfig().Get("Download", "RetryCount").toInt();
+	ui->retry->setCurrentIndex(count <= maxCount ? count : 0);
+	ui->retry->blockSignals(false);
+
+
 	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
 	ui->pathEdit->setText(path);
 	path = App()->GlobalConfig().Get("Download", "ScreenshotPath").toString();
 	ui->screenshotPath->setText(path);
 	ui->keepLastFrame->setChecked(App()->GlobalConfig().Get("Video", "KeepLastFrame").toBool());
 	ui->hwdecEnable->setChecked(App()->GlobalConfig().Get("Video", "HwdecEnable").toBool());
+
+	ui->debugLog->setChecked(App()->GlobalConfig().Get("App", "EnableDebugLog", true).toBool());
+
 #ifdef _WIN32
 	ui->recordEnable->setChecked(App()->GlobalConfig().Get("Video", "SoftwareRecord").toBool());
 	ui->hdmi->setChecked(App()->GlobalConfig().Get("Video", "HdmiCallback").toBool());
@@ -79,13 +92,18 @@ SettingDialog::~SettingDialog()
 void SettingDialog::closeEvent(QCloseEvent* e)
 {
 	auto& config = App()->GlobalConfig();
+	bool enableDebugLog = config.Get("App", "EnableDebugLog").toBool();
 	int oldType = config.Get("Video", "VideoOutput").toInt();
 	auto oldKeepLastFrame = config.Get("Video", "KeepLastFrame").toBool();
 	auto oldHwdecEnable = config.Get("Video", "HwdecEnable").toBool();
 	int count = ui->taskCount->currentData().toInt();
+	int retryCount = ui->retry->currentData().toInt();
 	int type = ui->videoOutput->currentIndex();
+
+	config.Set("App", "EnableDebugLog", ui->debugLog->isChecked());
 	
 	config.Set("Download", "TaskCount", count);
+	config.Set("Download", "RetryCount", retryCount);
 	config.Set("Download", "FilePath", QT_TO_UTF8(ui->pathEdit->text()));
 	config.Set("Download", "ScreenshotPath", QT_TO_UTF8(ui->screenshotPath->text()));
 	
@@ -94,9 +112,11 @@ void SettingDialog::closeEvent(QCloseEvent* e)
 	config.Set("Video", "HwdecEnable", ui->hwdecEnable->isChecked());
 
 	config.Set("Video", "VideoPlaySeek", ui->seek->value());
-
 	if (oldHwdecEnable != ui->hwdecEnable->isChecked()) {
 		SdkManager::GetManager()->SetHwdecEnable();
+	}
+	if (enableDebugLog != ui->debugLog->isChecked()) {
+		SdkManager::GetManager()->SetDebugLog();
 	}
 #ifdef _WIN32
 	auto oldRecord = config.Get("Video", "SoftwareRecord").toBool();
@@ -120,6 +140,8 @@ void SettingDialog::closeEvent(QCloseEvent* e)
 	if (oldType != type) {
 		SdkManager::GetManager()->SetVideoOutputDevice((VIDEO_OUTPUT_DEVICE)type);
 	}
+	SdkManager::GetManager()->SetRetryCount(retryCount);
+
 	auto & cacheConfig = Player::GetCacheConfig();
 	cacheConfig.enable = ui->cache->isChecked();
 	cacheConfig.maxCacheBytes = ui->cacheBytes->text().toInt();

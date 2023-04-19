@@ -813,6 +813,11 @@ void PlayerWidget::OpenParamWindow()
 	controller->OpenParamWindow();
 }
 
+bool PlayerWidget::IsLoading()
+{
+	return player->IsLoading();
+}
+
 void PlayerWidget::Stop(void)
 {
 	player->Stop();

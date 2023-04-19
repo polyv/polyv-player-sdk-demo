@@ -66,11 +66,11 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
 * 使用 `CMake GUI` 配置 `build目录`、配置所需的依赖。
 
- > ![cmake_build.png](https://i.loli.net/2020/12/14/pKVbxFAkZmndorv.png)
+ > ![cmake_build.png](https://help.polyv.net/#/vod/pc_player/CMAKE.png)
 
 * 设置 QTDIR，指定 QT 路径。（如：C:\Qt\Qt5.12.5\5.12.5\msvc2017）
   
- > ![QTDIR.png](https://i.loli.net/2020/12/14/uej85UVs6ORCNrG.png)
+ > ![QTDIR.png](https://help.polyv.net/#/vod/pc_player/QTDIR.png)
 
 ### CMake Bash
 

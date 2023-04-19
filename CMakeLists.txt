@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.19)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(PLV_PLAYER_SDK_VERSION "2.2.1")
+set(PLV_PLAYER_SDK_VERSION "2.3.0")
 cmake_policy(SET CMP0048 NEW)
 project(polyv-player-sdk-demo VERSION ${PLV_PLAYER_SDK_VERSION})
 

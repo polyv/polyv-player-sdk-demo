@@ -112,6 +112,7 @@ public:
 
 	void OpenParamWindow();
 
+	bool IsLoading();
 protected:
 	void paintEvent(QPaintEvent* e) override;
 	void closeEvent(QCloseEvent* e) override;

@@ -14,7 +14,6 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <Dwmapi.h>
-//#include <dump/EduDump.h>
 #include "frameless-helper.h"
 #endif // WIN32
 #include <http/http-manager.h>
@@ -205,6 +204,7 @@ bool Application::InitConfig()
 	//globalConfig.SetDefault("General", "Language", APP_DEFAULT_LANG);
 
 	globalConfig.SetDefault("Download", "TaskCount", 3);
+	globalConfig.SetDefault("Download", "RetryCount", 0);
 
 	QString videoPath = GetVideoPath();
 	videoPath += "/";
@@ -220,7 +220,7 @@ bool Application::InitConfig()
 	globalConfig.SetDefault("Video", "HwdecEnable", false);
 	globalConfig.SetDefault("Video", "KeepLastFrame", true);
 #ifdef _WIN32
-	globalConfig.SetDefault("Video", "SoftwareRecord", true);
+	globalConfig.SetDefault("Video", "SoftwareRecord", false);
 	globalConfig.SetDefault("Video", "HdmiCallback", true);
 #endif
 
