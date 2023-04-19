@@ -268,7 +268,7 @@ if(APPLE)
 	target_link_libraries(${PROJECT_NAME} PRIVATE ${PLAYER_SDK_PATH}/mac/lib/libplv-player-sdk.dylib)
 	set(PLAYERSDK_INCLUDE_DIRS ${PLAYER_SDK_PATH}/mac/include)
 
-	#set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,${PLAYER_SDK_PATH}/mac/lib")
+	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-Wl,-rpath,${PLAYER_SDK_PATH}/mac/lib")
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${PLAYERSDK_INCLUDE_DIRS})
 
