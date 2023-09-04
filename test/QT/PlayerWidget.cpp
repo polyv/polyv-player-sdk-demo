@@ -20,6 +20,7 @@
 #include "TipsWidget.h"
 #include "ParamDialog.h"
 #include "MsgBoxDialog.h"
+#include "GlobalConfig.h"
 
 ///////////////////////////////////////////////////////
 PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
@@ -51,7 +52,7 @@ PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
 	shotButton = new StatusButton(this, "shotButton", QTStr("ShotScreen"), QSize(40, 40));
 	shotButton->setVisible(false);
 	connect(shotButton, &QPushButton::clicked, this, [this] {
-		auto path = App()->GlobalConfig().Get("Download", "ScreenshotPath").toString();
+		auto path = GlobalConfig::GetSaveScreenshotPath();
 		if (path.isEmpty()) {
 			return;
 		}
@@ -94,7 +95,7 @@ PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
 			player->Pause(!player->IsPause());
 		}
 		else if (isLocalPlay && curVideo) {
-			player->PlayLocal(0);
+			player->PlayLocal(0, GlobalConfig::IsAutoDownRate());
 		}
 		else if (curVideo){
 			QMetaObject::invokeMethod((QWidget*)filterObject, "OnChangeRatePlayVideo", Qt::QueuedConnection,
@@ -173,16 +174,23 @@ PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
 			});
 		};
 		if (isLocalPlay) {
-			for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
+			for (int i = VIDEO_RATE_LD; i <= VIDEO_RATE_HD; ++i) {
 				AddAction(popup, i, curVideo ? (SdkManager::GetManager()->CheckFileComplete(
 					QString::fromStdString(curVideo->vid), QString::fromStdString(curVideo->filePath), i)): false);
 			}
 		}
-		else{
-			int rateCount = player->GetRateCount();
-			AddAction(popup, VIDEO_RATE_AUTO, rateCount > VIDEO_RATE_AUTO);
-			for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
-				AddAction(popup, i, rateCount >= i);
+		else{		
+			int rateCount = player->GetCurrentRateCount();
+			if (1 == rateCount && curRate == VIDEO_RATE_SOURCE) {
+				for (int i = VIDEO_RATE_AUTO; i <= VIDEO_RATE_SOURCE; ++i) {
+					AddAction(popup, i, curRate == i);
+				}
+			}
+			else {
+				AddAction(popup, VIDEO_RATE_AUTO, true);
+				for (int i = VIDEO_RATE_LD; i <= VIDEO_RATE_SOURCE; ++i) {
+					AddAction(popup, i, rateCount >= i);
+				}
 			}
 		}	
 		QPoint ptY = mediaSlide->mapToGlobal(QPoint(0, 0));
@@ -298,6 +306,8 @@ PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
 	layout->addWidget(loadingLabel, 0, Qt::AlignCenter);
 	loadingWidget->setLayout(layout);
 	addWidget(loadingWidget);
+	loadingWidget->setVisible(true);
+	loadingMovie->start();
 	
 	connect(player, &Player::SignalState, this, [this](int state) {
 		switch (state)
@@ -365,7 +375,12 @@ PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
 		int seconds = millisecond / 1000;
 		int h = seconds / (60 * 60);
 		int m = (seconds % (60 * 60)) / 60;
-		QString text = QTime(h, m, seconds % 60).toString("hh:mm:ss");
+		int s = seconds % 60;
+		QString text = QTime(h, m, s).toString("hh:mm:ss");
+		if (h >= 24) {
+			text = QString("%1:%2:%3").arg(h).
+				arg(m, 2, 10, QLatin1Char('0')).arg(s, 2, 10, QLatin1Char('0'));
+		}
 		timeLabel->setText(QString("%1/%2").arg(text).arg(timeLabel->property("duration").toString()));
 
 		mapProperty[MEDIA_PROPERTY_POSTION] = MediaProperty{ MEDIA_PROPERTY_POSTION, MEDIA_FORMAT_STRING, text };
@@ -381,7 +396,12 @@ PlayerControl::PlayerControl(Player* _player, QWidget* parent/* = nullptr*/)
 			int seconds = millisecond / 1000;
 			int h = seconds / (60 * 60);
 			int m = (seconds % (60 * 60)) / 60;
-			QString duration = QTime(h, m, seconds % 60).toString("hh:mm:ss");
+			int s = seconds % 60;
+			QString duration = QTime(h, m, s).toString("hh:mm:ss");
+			if (h >= 24) {
+				duration = QString("%1:%2:%3").arg(h).
+					arg(m, 2, 10, QLatin1Char('0')).arg(s, 2, 10, QLatin1Char('0'));
+			}
 			timeLabel->setText(QString("00:00:00/%1").arg(duration));
 			timeLabel->setProperty("duration", duration);
 
@@ -585,7 +605,7 @@ bool PlayerControl::eventFilter(QObject* obj, QEvent* e)
 				break;
 			}
 			volumePanelHideTimer->stop();
-			QPoint ptY = mediaSlide->mapToGlobal(QPoint(0, 0));
+			QPoint ptY = barWidget->mapToGlobal(QPoint(0, 0));
 			QPoint ptShow = volumeButton->mapToGlobal(QPoint(volumeButton->width() >> 1, 0));
 			volumePanel->show();
 			ptShow.setX(ptShow.x() - (volumePanel->width() >> 1));
@@ -660,7 +680,7 @@ bool PlayerControl::eventFilter(QObject* obj, QEvent* e)
 void PlayerControl::SetRate(int rate, bool notify)
 {
 	findChild<QPushButton*>("videoButton")->setText(GetVideoName(rate));
-	if (rate == curRate) {
+	if (rate == curRate) { 
 		return;
 	}
 	curRate = rate;
@@ -671,7 +691,7 @@ void PlayerControl::SetRate(int rate, bool notify)
 	if (isLocalPlay) {
 		if (curVideo && SdkManager::GetManager()->CheckFileComplete(
 			QString::fromStdString(curVideo->vid), QString::fromStdString(curVideo->filePath), rate)) {
-			int ret = player->SetVideo(QString::fromStdString(curVideo->vid),
+			int ret = player->SetInfo(QString::fromStdString(curVideo->vid),
 				QString::fromStdString(curVideo->filePath), rate);
 			if (E_NO_ERR != ret) {
 				slog_error("[sdk]:set player info error:%d", ret);
@@ -680,7 +700,7 @@ void PlayerControl::SetRate(int rate, bool notify)
 				Reset();
 				return;
 			}
-			ret = player->PlayLocal(pos);
+			ret = player->PlayLocal(pos, GlobalConfig::IsAutoDownRate());
 			if (E_NO_ERR != ret) {
 				slog_error("[sdk]:play local error:%d", ret);
 				QMetaObject::invokeMethod((QWidget*)filterObject, "OnShowTips", Qt::QueuedConnection,
@@ -796,8 +816,8 @@ bool PlayerWidget::OnlineRePlay(int rate, int seekMillisecond, const QString& to
 
 bool PlayerWidget::LoadLocal(const SharedVideoPtr& video)
 {
-	SetVideo(true, VIDEO_RATE_AUTO, video);
-	player->LoadLocal(0);
+	SetInfo(true, VIDEO_RATE_AUTO, video);
+	player->LoadLocal(0, GlobalConfig::IsAutoDownRate());
 	return true;
 }
 
@@ -843,9 +863,9 @@ void PlayerWidget::closeEvent(QCloseEvent* e)
 	QWidget::closeEvent(e);
 }
 
-bool PlayerWidget::SetVideo(bool local, int rate, const SharedVideoPtr& video)
+bool PlayerWidget::SetInfo(bool local, int rate, const SharedVideoPtr& video)
 {
-	int ret = player->SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
+	int ret = player->SetInfo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
 	if (E_NO_ERR != ret) {
 		slog_error("[sdk]:set player info error:%d", ret);
 		return false;
@@ -856,15 +876,15 @@ bool PlayerWidget::SetVideo(bool local, int rate, const SharedVideoPtr& video)
 
 bool PlayerWidget::StartPlay(bool local, int rate, const QString& token, const SharedVideoPtr& video, int seekMillisecond)
 {
-	if (!SetVideo(local, rate, video)) {
+	if (!SetInfo(local, rate, video)) {
 		return false;
 	}
 	int ret = 0;
 	if (local) {
-		ret = player->PlayLocal(seekMillisecond);
+		ret = player->PlayLocal(seekMillisecond, GlobalConfig::IsAutoDownRate());
 	}
 	else {
-		ret = player->Play(token, seekMillisecond, false);
+		ret = player->Play(token, seekMillisecond, GlobalConfig::IsAutoDownRate(), GlobalConfig::IsPlayWithToken(), false);
 	}
 	if (E_NO_ERR != ret) {
 		slog_error("[sdk]:play %s error:%d", (local ? "local" : "online"), ret);

@@ -16,14 +16,15 @@
 #include "SdkManager.h"
 #include "Application.h"
 #include "SettingDialog.h"
-#include "VidDialog.h"
+#include "InputDialog.h"
 #include "VideoControl.h"
 #include "TipsWidget.h"
 #include "StatusButton.h"
 #include "MyVideoList.h"
-#include "DeviceWarnDialog.h"
+#include "DetectRecordingDialog.h"
 #include "MsgBoxDialog.h"
 #include "MultiPlayerDialog.h"
+#include "MigrateDialog.h"
 
 namespace {
 	QString GetFileSizeStr(quint64 fileSize, int maxLevel = 4) // factor is 1024, maxLevel 4 is GB
@@ -170,13 +171,8 @@ bool MainWindow::Init(void)
 		TipsWidget::TIP_INFO, TipsWidget::TIP_POS_TOP, 0, false, false, true);
 	myVideoList->RequestAll();
 
-#ifdef _WIN32
-	SdkManager::GetManager()->SetSoftwareRecord((void*)this->winId(), 
-		App()->GlobalConfig().Get("Video", "SoftwareRecord").toBool());
-	SdkManager::GetManager()->SetHdmiRecord(App()->GlobalConfig().Get("Video", "HdmiCallback").toBool());
-	connect(SdkManager::GetManager(), &SdkManager::SignalPluginInject, this, &MainWindow::OnPluginInject);
-	connect(SdkManager::GetManager(), &SdkManager::SignalHDMIDeviceChanged, this, &MainWindow::OnHDMIDevice);
-#endif// _WIN32
+	SdkManager::GetManager()->SetSoftwareRecording();
+	SdkManager::GetManager()->SetHardwareRecording();
 
 	//resize(defSize);// multi screen, diff dpi
 	return true;
@@ -186,6 +182,28 @@ QString MainWindow::GetToken(const QString& vid)
 {
 	return MyVideoList::GetTokenSafeBlock(myVideoList, vid);
 	//return myVideoList->GetToken(vid);
+}
+
+bool MainWindow::IsExistLocalFile(const QString& vid)
+{
+	auto it = mapLocalVideos.begin();
+	while (it != mapLocalVideos.end()) {
+		QString videoId = QString::fromStdString(it.key());
+		if (videoId.contains(vid)) {
+			return true;
+		}
+		++it;
+	}
+	QDir dir(App()->GetLocalPath());
+	QStringList filters;
+	filters << "*.json";
+	auto files = dir.entryList(filters, QDir::Files);
+	for (auto& it : files) {
+		if (it.contains(vid)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void MainWindow::closeEvent(QCloseEvent* e)
@@ -227,9 +245,9 @@ void MainWindow::on_refreshButton_clicked(void)
 
 void MainWindow::on_vidButton_clicked(void)
 {
-	VidDialog dlg(this);
+	InputDialog dlg(InputDialog::INPUT_TYPE::VID, this);
 	if (QDialog::Accepted == dlg.exec()) {
-		auto vid = dlg.GetVID();
+		auto vid = dlg.GetParam();
 		auto item = mapMyVideos.value(QT_TO_UTF8(vid));
 		if (item) {
 			StartItemHighlight(item->video->vid);
@@ -238,6 +256,11 @@ void MainWindow::on_vidButton_clicked(void)
 			myVideoList->RequestVid(vid);
 		}
 	}
+}
+void MainWindow::on_migrateButton_clicked(void)
+{
+	MigrateDialog dlg(this);
+	dlg.exec();
 }
 //void MainWindow::on_stackedWidget_currentChanged(int index)
 //{
@@ -290,6 +313,11 @@ void MainWindow::OnChangeRatePlayVideo(int rate, int seekMillisecond, const Shar
 	QString token;
 	if (1 == video->seed) {
 		token = GetToken(QT_UTF8(video->vid.c_str()));
+		if (token.isEmpty()) {
+			slog_error("request token error.");
+			OnShowTips(TipsWidget::TIP_ERROR, QTStr("PlayerTokenError"));
+			return;
+		}
 	}
 //#ifdef _WIN32
 	ui->player->OnlineRePlay(rate, seekMillisecond, token, video);
@@ -316,97 +344,48 @@ void MainWindow::OnCloseLoadTip(void)
 
 void MainWindow::OnHighlightItem(void)
 {
-	auto item = mapMyVideos.value(curHighlightVid);
-	if (item && item->item) {
-		item->item->setSelected(!item->item->isSelected());
-		curHighlight++;
+	auto it = mapFlicker.begin();
+	while (it != mapFlicker.end()) {
+		auto item = it.value();
+		if (item->count > 10) {
+			SelectItem(item->item->row(), false);
+			it = mapFlicker.erase(it); 
+		}
+		else {
+			auto select = item->item->isSelected();
+			SelectItem(item->item->row(), !item->item->isSelected());
+			item->count++;
+			++it;
+		}
 	}
-	if (curHighlight >= 10) {
+	if (mapFlicker.isEmpty()) {
 		StopItemHighlight();
 	}
 }
 
-#ifdef _WIN32
-void MainWindow::OnHDMIDevice(int type,  QString id)
+void MainWindow::OnDetectSoftwareRecording(int type, QString software)
 {
-	static DeviceWarnDialog* warnDialog = nullptr;
-	switch (type)
-	{
-	case HDMI_DEVICE_NONE:
-		mapDisables.clear();
-
-		break;
-	case HDMI_DEVICE_USE: {
-		if (!mapDisables.contains(id)) {
-			if (warnDialog) {
-				warnDialog->activateWindow();
-				warnDialog->show();
-				return;
-			}
-			warnDialog = new DeviceWarnDialog(id, this);
-			//warnDialog->setAttribute(Qt::WA_DeleteOnClose, true);
-			connect(warnDialog, &DeviceWarnDialog::finished, this, [&](int) {
-				warnDialog = nullptr;
-			});
-			warnDialog->show();
-			return;
-		}
+	if (!detectRecordingDialog) {
+		detectRecordingDialog = new DetectRecordingDialog(this);
+		detectRecordingDialog->hide();
 	}
-						break;
-	case HDMI_DEVICE_UNUSE:
-		mapDisables.remove(id);
-		break;
-	}
-	if (mapDisables.isEmpty()) {
-		EnableWindow(true);
-
-		if (warnDialog) {
-			warnDialog->close();
-			warnDialog = nullptr;
-		}
-	}
+	detectRecordingDialog->DetectSoftwareRecording(type, software);	
 }
 
-void MainWindow::OnPluginInject(void)
+void MainWindow::OnDetectHardwareRecording(int type, QString device)
 {
-	if (MsgBoxDialog::MSGBOX_RESULT_OK == MsgBoxDialog::ConfirmOK(
-		this, QTStr("HasSoftwareInjectRecording"), QTStr("Disable"), QTStr("Ignore"), QString(), nullptr)) {
-		EnableWindow(false);
+	if (!detectRecordingDialog) {
+		detectRecordingDialog = new DetectRecordingDialog(this);
+		detectRecordingDialog->hide();
 	}
+	detectRecordingDialog->DetectHardwareRecording(type, device);
 }
 
-#endif // _WIN32
-
-
-
-void MainWindow::OnEnableWindow(const QString& id, bool enable)
+void MainWindow::OnEnableWindow(bool enable)
 {
-	if (!enable) {
-		mapDisables[id] = enable;
-		EnableWindow(enable);
-		return;
-	}
-	mapDisables.remove(id);
-	if (enable && mapDisables.isEmpty()) {
-		EnableWindow(enable);
-	}
-}
-
-void MainWindow::OnEnableWindows()
-{
-	mapDisables.clear();
-	EnableWindow(true);
-}
-
-void MainWindow::EnableWindow(bool enable)
-{
-	if (isEnableWindow == enable) {
-		return;
-	}
 	if (!enable) {
 		OnShowListVideo();
 	}
-	isEnableWindow = enable;
 	ui->content->setEnabled(enable);
 }
 
@@ -419,7 +398,7 @@ void MainWindow::OnCompleteRequestVideo(void)
 	auto files = dir.entryList(filters, QDir::Files);
 	qDebug() << files;
 	for (auto & it : files) {
-		bool result = false;
+		bool removeFile = false;
 		QString fileName = QString("%1/%2").arg(App()->GetLocalPath()).arg(it);
 		do
 		{
@@ -432,9 +411,11 @@ void MainWindow::OnCompleteRequestVideo(void)
 				file.readAll(), &err);
 			file.close();
 			if (err.error != QJsonParseError::NoError) {
+				removeFile = true;				
 				continue;
 			}
 			if (!jsonDocument.isObject()) {
+				removeFile = true;
 				break;
 			}
 			QJsonObject item = jsonDocument.object();
@@ -448,9 +429,6 @@ void MainWindow::OnCompleteRequestVideo(void)
 			auto video = mapMyVideos.value(vid.toStdString());
 			if (!video) {
 				QString videoUrl = item["mp4"].toString();
-				if (videoUrl.isEmpty()) {
-					break;
-				}
 				videoInfo = std::make_shared<VideoInfo>();
 				videoInfo->vid = vid.toStdString();
 				videoInfo->filePath = path.toStdString();
@@ -467,9 +445,8 @@ void MainWindow::OnCompleteRequestVideo(void)
 				videoInfo->filePath = path.toStdString();
 			}
 			InsertLocalItem(rate, videoInfo);
-			result = true;
 		} while (false);
-		if (!result) {
+		if (removeFile) {
 			QFile::remove(fileName);
 		}
 	}
@@ -530,14 +507,14 @@ void MainWindow::OnRemoveLocalVideo(int rate, const SharedVideoPtr& video)
 	ui->localVideoTable->removeRow(item->item->row());
 	ui->localvideo->SetTableEmpty(mapLocalVideos.isEmpty());
 
-	{
-		Downloader downloader(this);
-		for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
-			downloader.SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), i);
-			downloader.Delete();
+	if (VIDEO_RATE_AUTO == rate) {
+		for (int i = VIDEO_RATE_LD; i <= VIDEO_RATE_HD; ++i) {
+			SdkManager::GetManager()->DeleteLocalVideoFile(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), i);
 		}
 	}
-	
+	else {
+		SdkManager::GetManager()->DeleteLocalVideoFile(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
+	}	
 	QString localPath = App()->GetLocalPath();
 	QString fileName = QString("%1/%2_%3.json").arg(localPath).arg(video->vid.c_str()).arg(rate);
 	QFile::remove(fileName);
@@ -636,7 +613,7 @@ bool MainWindow::InsertMyVideoItem(const SharedVideoPtr& video, bool focus)
 		}
 		item = std::make_shared<Item>();
 		item->video = video;
-		int row = 0;// ui->docTable->rowCount();
+		int row = (focus ? 0 : ui->myVideoTable->rowCount());
 		ui->myVideoTable->insertRow(row);
 		int col = 0;
 		item->item = new QTableWidgetItem;
@@ -852,7 +829,7 @@ bool MainWindow::InsertLocalItem(int rate, const SharedVideoPtr& video)
 void MainWindow::UpdateItemTitle(QTableWidget* table, const QMap<std::string, SharedItemPtr>& map,
 	const std::string& vid, const std::string& title)
 {
-	for (int i = VIDEO_RATE_SD; i <= VIDEO_RATE_BD; ++i) {
+	for (int i = VIDEO_RATE_LD; i <= VIDEO_RATE_HD; ++i) {
 		auto videoId = CreateVid(i, vid);
 		auto item = map.value(vid);
 		if (!item) {
@@ -864,48 +841,46 @@ void MainWindow::UpdateItemTitle(QTableWidget* table, const QMap<std::string, Sh
 		}
 	}
 }
-//void MainWindow::SelecteTableItem(QTableWidget* table, const SharedItemPtr& item, bool selecte)
-//{
-//	if (!table || !item || !item->item) {
-//		return;
-//	}
-//	item->item->setSelected(selecte);
-//	//auto tableItem = table->item(item->item->row(), 1);
-//	//if (tableItem) {
-//	//	tableItem->setSelected(selecte);
-//	//}
-//}
 
 void MainWindow::StartItemHighlight(const std::string& vid)
 {
-	if (vid != curHighlightVid) {
-		StopItemHighlight();		
-		curHighlightVid = vid;
+	if (mapFlicker.contains(vid)) {
+		return;
 	}
-	auto item = mapMyVideos.value(curHighlightVid);
+	auto item = mapMyVideos.value(vid);
 	if (item && item->item) {
+		auto flickerItem = std::make_shared<FlickerItem>();
+		flickerItem->count = 0;
+		flickerItem->item = item->item;
+		mapFlicker.insert(vid, flickerItem);
 		ui->myVideoTable->scrollTo(ui->myVideoTable->model()->index(item->item->row(), 0));
-		item->item->setSelected(true);
-		if (!itemHighlightTimer) {
-			itemHighlightTimer = new QTimer(this);
-			connect(itemHighlightTimer, SIGNAL(timeout()), this, SLOT(OnHighlightItem()));
+		if (!flickerTimer) {
+			flickerTimer = new QTimer(this);
+			connect(flickerTimer, SIGNAL(timeout()), this, SLOT(OnHighlightItem()));
 		}
-		curHighlight = 0;
-		itemHighlightTimer->start(200);
+		flickerTimer->start(200);
 	}
 }
 
 void MainWindow::StopItemHighlight(void)
 {
-	if (itemHighlightTimer) {
-		itemHighlightTimer->stop();
+	if (flickerTimer) {
+		flickerTimer->stop();
 	}
-	auto item = mapMyVideos.value(curHighlightVid);
-	if (item && item->item) {
-		item->item->setSelected(false);
+	for (auto& it : mapFlicker) {
+		SelectItem(it->item->row(), false);
 	}
-	curHighlight = 0;
-	curHighlightVid = std::string();
+	mapFlicker.clear();
+}
+void MainWindow::SelectItem(int row, bool select)
+{
+	auto selectionModel = ui->myVideoTable->selectionModel();
+	auto mode = ui->myVideoTable->model();
+	auto index = mode->index(row, 0);
+	auto& topLeft = index;
+	auto bottomRight = mode->index(row, mode->columnCount() - 1);
+	QItemSelection selection(topLeft, bottomRight);
+	selectionModel->select(selection, select ? QItemSelectionModel::Select : QItemSelectionModel::Deselect);
 }
 
 void MainWindow::CloseDialogs()

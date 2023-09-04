@@ -81,10 +81,11 @@ struct NameInfo2 {
 QString GetVideoName(int type)
 {
 	static struct NameInfo1 videoNameInfo[] = {
+	{VIDEO_RATE_LD, QTStr("LD")},
 	{VIDEO_RATE_SD, QTStr("SD")},
 	{VIDEO_RATE_HD, QTStr("HD")},
-	{VIDEO_RATE_BD, QTStr("BD")},
 	{VIDEO_RATE_AUTO, QTStr("Auto")},
+	{VIDEO_RATE_SOURCE, QTStr("Source")},
 	};
 
 	static int count = sizeof(videoNameInfo) / sizeof(videoNameInfo[0]);

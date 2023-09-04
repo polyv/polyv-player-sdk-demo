@@ -53,10 +53,10 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
 注意，Windows 平台的条件编译宏是 `_WIN32` 而不是 `WIN32`。
 
-    | Platform | Marco       |
-    | -------- | ----------- |
-    | Windows  | `_WIN32`    |
-    | Mac      | `__APPLE__` |
+| Platform | Marco       |
+| -------- | ----------- |
+| Windows  | `_WIN32`    |
+| Mac      | `__APPLE__` |
 
 ## C++ Demo 使用 CMake 构建
 

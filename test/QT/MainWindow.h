@@ -9,8 +9,8 @@
 
 class MyVideoList;
 class TipsWidget;
-class DeviceWarnDialog;
 class MultiPlayerDialog;
+class DetectRecordingDialog;
 
 
 namespace Ui {
@@ -27,6 +27,8 @@ public:
 
     bool Init(void);
 	QString GetToken(const QString& vid);
+
+	bool IsExistLocalFile(const QString& vid);
 protected:
 	virtual void closeEvent(QCloseEvent* e) override;
 private slots:
@@ -34,6 +36,7 @@ private slots:
 	void on_settingButton_clicked(void);
 	void on_refreshButton_clicked(void);
 	void on_vidButton_clicked(void);
+	void on_migrateButton_clicked(void);
 	//void on_stackedWidget_currentChanged(int index);
 
 	void OnShowListVideo(void);
@@ -60,14 +63,9 @@ private slots:
 
 	void OnHighlightItem(void);
 
-#ifdef _WIN32
-	void OnHDMIDevice(int type, QString id);
-	void OnPluginInject(void);
-#endif // _WIN32
-
-	void OnEnableWindow(const QString& id, bool enable);
-	void OnEnableWindows();
-
+	void OnDetectHardwareRecording(int type, QString device);
+	void OnDetectSoftwareRecording(int type, QString software);
+	void OnEnableWindow(bool enable);
 	
 private:
 	void ShowPlayer(void);
@@ -78,6 +76,7 @@ private:
 
 	void StartItemHighlight(const std::string& vid);
 	void StopItemHighlight(void);
+	void SelectItem(int row, bool select);
 	void CloseDialogs();
 
 	QString CreateVid(int rate, const SharedVideoPtr& video);
@@ -93,9 +92,13 @@ private:
 
 	TipsWidget* loadTipWidget = nullptr;
 
-	QTimer* itemHighlightTimer = nullptr;
-	int curHighlight = 0;
-	std::string curHighlightVid;
+	QTimer* flickerTimer = nullptr;
+	struct FlickerItem {
+		int count;
+		QTableWidgetItem* item;
+	};
+	using FlickerItemPtr = std::shared_ptr<FlickerItem>;
+	QMap<std::string, FlickerItemPtr> mapFlicker;
 
 	struct Item {
 		QTableWidgetItem* item;
@@ -113,12 +116,5 @@ private:
 
 	const int kMyVideoItemCount = 5;
 
-	enum {
-		HDMI_ENABLE_WIN = 0,
-		HDMI_DISABLE_WIN,
-		HDMI_IGNORE
-	};
-	QMap<QString, int> mapDisables;
-	bool isEnableWindow = true;
-	void EnableWindow(bool enable);
+	QPointer<DetectRecordingDialog> detectRecordingDialog;
 };

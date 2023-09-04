@@ -115,6 +115,11 @@ void MultiPlayerDialog::OnChangeRatePlayVideo(int rate, int seekMillisecond, con
 	QString token;
 	if (1 == video->seed) {
 		token = App()->GetMainWindow()->GetToken(vid);
+		if (token.isEmpty()) {
+			slog_error("request token error.");
+			OnShowTips(TipsWidget::TIP_ERROR, QTStr("PlayerTokenError"));
+			return;
+		}
 	}
 	ui->player->OnlineRePlay(rate, seekMillisecond, token, video);
 }

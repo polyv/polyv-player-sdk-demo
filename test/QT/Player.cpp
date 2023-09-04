@@ -32,10 +32,9 @@ Player::Player(void* window, QObject* parent/* = nullptr*/)
 		QMetaObject::invokeMethod(obj, "OnProgress", Qt::QueuedConnection,
 			Q_ARG(QString, vid), Q_ARG(int, millisecond));
 	}, this);
-	PLVPlayerSetAudioDeviceHandler(player, [](const char* vid, int audioDeviceCount, void* data) {
+	PLVPlayerSetAudioDeviceHandler(player, [](int audioDeviceCount, void* data) {
 		Player* obj = (Player*)data;
-		QMetaObject::invokeMethod(obj, "OnAudioDeviceChange", Qt::QueuedConnection,
-			Q_ARG(QString, vid), Q_ARG(int, audioDeviceCount));
+		QMetaObject::invokeMethod(obj, "OnAudioDeviceChange", Qt::QueuedConnection, Q_ARG(int, audioDeviceCount));
 	}, this);
 
 	UpdateOSDConfig();
@@ -63,9 +62,9 @@ PlayerCacheConfig& Player::GetCacheConfig()
 	return cacheConfig;
 }
 
-int Player::SetVideo(const QString& vid, const QString& path, int rate)
+int Player::SetInfo(const QString& vid, const QString& path, int rate)
 {
-	return PLVPlayerSetVideo(player, vid.toStdString().c_str(), path.toStdString().c_str(), rate);
+	return PLVPlayerSetInfo(player, vid.toStdString().c_str(), path.toStdString().c_str(), rate);
 }
 int Player::Reset()
 {
@@ -77,7 +76,7 @@ void Player::UpdateOSDConfig()
 		PLVPlayerSetOSDConfig(player, osdConfig.enable, nullptr);
 		return;
 	}
-	OSDConfigInfo config;
+	PLVOsdConfigInfo config;
 	config.animationEffect = (OSD_DISPLAY_TYPE)osdConfig.animationEffect;
 	std::string borderColor = osdConfig.borderColor.toStdString();
 	config.borderColor = borderColor.c_str();
@@ -98,11 +97,9 @@ void Player::UpdateLogoConfig()
 		PLVPlayerSetLogoText(player, logoConfig.enable, nullptr);
 		return;
 	}
-	LogoTextInfo config;
+	PLVLogoTextInfo config;
 	std::string text = logoConfig.text.toStdString();
 	config.text = text.c_str();
-	std::string textFontName = logoConfig.textFontName.toStdString();
-	config.textFontName = textFontName.c_str();
 	config.textSize = logoConfig.textSize;
 	std::string textColor = logoConfig.textColor.toStdString();
 	config.textColor = textColor.c_str();
@@ -118,17 +115,17 @@ void Player::UpdateCacheConfig()
 {
 	PLVPlayerSetCacheConfig(player, cacheConfig.enable, cacheConfig.maxCacheBytes, cacheConfig.maxCacheSeconds);
 }
-int Player::Play(const QString& token, int seekMillisecond, bool sync)
+int Player::Play(const QString& token, int seekMillisecond, bool autoDownRate, bool playWithToken, bool sync)
 {
-	return PLVPlayerPlay(player, token.toStdString().c_str(), seekMillisecond, sync);
+	return PLVPlayerPlay(player, token.toStdString().c_str(), seekMillisecond, autoDownRate, playWithToken, sync);
 }
-int Player::PlayLocal(int seekMillisecond)
+int Player::PlayLocal(int seekMillisecond, bool autoDownRate)
 {
-	return PLVPlayerPlayLocal(player, seekMillisecond);
+	return PLVPlayerPlayLocal(player, seekMillisecond, autoDownRate);
 }
-int Player::LoadLocal(int seekMillisecond)
+int Player::LoadLocal(int seekMillisecond, bool autoDownRate)
 {
-	return PLVPlayerLoadLocal(player, seekMillisecond);
+	return PLVPlayerLoadLocal(player, seekMillisecond, autoDownRate);
 }
 int Player::Pause(bool pause)
 {
@@ -178,9 +175,9 @@ int Player::GetDuration()
 {
 	return PLVPlayerGetDuration(player);
 }
-int Player::GetRateCount()
+int Player::GetCurrentRateCount()
 {
-	return PLVPlayerGetRateCount(player);
+	return PLVPlayerGetCurrentRateCount(player);
 }
 int Player::GetCurrentRate()
 {
@@ -235,9 +232,9 @@ int Player::SetCurrentAudioDevice(const QString& deviceId)
 {
 	return PLVPlayerSetCurrentAudioDevice(player, deviceId.toStdString().c_str());
 }
-int Player::ReloadAudio()
+int Player::ReloadAudioDevice()
 {
-	return PLVPlayerReloadAudio(player);
+	return PLVPlayerReloadAudioDevice(player);
 }
 
 void Player::OnState(QString vid, int state)
@@ -260,11 +257,10 @@ void Player::OnProgress(QString vid, int millisecond)
 	(void)vid;
 	emit SignalProgress(millisecond);
 }
-void Player::OnAudioDeviceChange(QString vid, int audioDeviceCount)
+void Player::OnAudioDeviceChange(int audioDeviceCount)
 {
-	(void)vid;
 	if (audioDeviceCount > 0) {
-		ReloadAudio();
+		ReloadAudioDevice();
 	}
 	emit SignalAudioDeviceChange(audioDeviceCount);
 }

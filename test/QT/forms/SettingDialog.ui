@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>627</width>
-    <height>492</height>
+    <height>488</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -78,35 +78,38 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>0</y>
+           <y>-276</y>
            <width>613</width>
-           <height>1028</height>
+           <height>1213</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <property name="leftMargin">
-           <number>80</number>
+           <number>40</number>
           </property>
           <property name="topMargin">
            <number>24</number>
           </property>
           <property name="rightMargin">
-           <number>80</number>
+           <number>40</number>
           </property>
           <property name="bottomMargin">
            <number>24</number>
           </property>
           <item>
-           <widget class="QLabel" name="label_4">
+           <widget class="QLabel" name="label_30">
             <property name="text">
-             <string>ScreenShotPath</string>
+             <string>LogPath</string>
             </property>
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <layout class="QHBoxLayout" name="horizontalLayout_13">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
             <item>
-             <widget class="QLineEdit" name="screenshotPath">
+             <widget class="PathEdit" name="logPath">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -119,40 +122,24 @@
                 <height>32</height>
                </size>
               </property>
-              <property name="readOnly">
-               <bool>true</bool>
+              <property name="placeholderText">
+               <string>LogPathTip</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="screenshotButton">
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string>ChangeDirectory</string>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="openShotDir">
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
+             <widget class="QPushButton" name="logBtn">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>28</height>
+               </size>
               </property>
               <property name="text">
                <string>OpenDirectory</string>
               </property>
-              <property name="autoDefault">
-               <bool>false</bool>
+              <property name="ButtonStyle" stdset="0">
+               <string>blue</string>
               </property>
              </widget>
             </item>
@@ -173,7 +160,7 @@
              </size>
             </property>
             <property name="text">
-             <string>DownloadPath</string>
+             <string>SaveVideoPath</string>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse</set>
@@ -181,9 +168,9 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
-             <widget class="QLineEdit" name="pathEdit">
+             <widget class="PathEdit" name="videoPath">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -199,26 +186,19 @@
               <property name="readOnly">
                <bool>true</bool>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pathButton">
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string>ChangeDirectory</string>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
+              <property name="placeholderText">
+               <string>SaveVideoPathTip</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="openDownloadDir">
+             <widget class="QPushButton" name="videoBtn">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>28</height>
+               </size>
+              </property>
               <property name="cursor">
                <cursorShape>PointingHandCursor</cursorShape>
               </property>
@@ -231,6 +211,67 @@
               <property name="autoDefault">
                <bool>false</bool>
               </property>
+              <property name="ButtonStyle" stdset="0">
+               <string>blue</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>SaveScreenshotPath</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <item>
+             <widget class="PathEdit" name="screenshotPath">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="placeholderText">
+               <string>SaveScreenshotPathTip</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="screenshotBtn">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>28</height>
+               </size>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
+              <property name="text">
+               <string>OpenDirectory</string>
+              </property>
+              <property name="autoDefault">
+               <bool>false</bool>
+              </property>
+              <property name="ButtonStyle" stdset="0">
+               <string>blue</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -240,12 +281,12 @@
             <item>
              <widget class="QLabel" name="label_2">
               <property name="text">
-               <string>MaxCount</string>
+               <string>MaxDownloadTaskCount</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="taskCount">
+             <widget class="ComboBoxIgnoreScroll" name="taskCount">
               <property name="minimumSize">
                <size>
                 <width>96</width>
@@ -263,7 +304,7 @@
             <item>
              <widget class="QLabel" name="label_3">
               <property name="text">
-               <string>DownloadTask</string>
+               <string>DownloadTaskCount</string>
               </property>
              </widget>
             </item>
@@ -290,12 +331,12 @@
             <item>
              <widget class="QLabel" name="label_12">
               <property name="text">
-               <string>RetryCount</string>
+               <string>DownloadRetryCount</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="retry">
+             <widget class="ComboBoxIgnoreScroll" name="retryCount">
               <property name="minimumSize">
                <size>
                 <width>96</width>
@@ -336,12 +377,12 @@
             <item>
              <widget class="QLabel" name="label_5">
               <property name="text">
-               <string>VideoOutput</string>
+               <string>VideoRenderOutput</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="videoOutput">
+             <widget class="ComboBoxIgnoreScroll" name="videoOutput">
               <property name="minimumSize">
                <size>
                 <width>120</width>
@@ -354,30 +395,125 @@
                 <height>32</height>
                </size>
               </property>
-              <item>
-               <property name="text">
-                <string>None</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>GPU</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Direct3D</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>GDI</string>
-               </property>
-              </item>
+             </widget>
+            </item>
+            <item>
+             <widget class="ComboBoxIgnoreScroll" name="videoOutputContext">
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>120</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
             <item>
              <spacer name="horizontalSpacer_5">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_29">
+              <property name="text">
+               <string>LogLevel</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="ComboBoxIgnoreScroll" name="logLevel">
+              <property name="minimumSize">
+               <size>
+                <width>96</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>32</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="logCallback">
+              <property name="text">
+               <string>LogCallback</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_14">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="label_31">
+              <property name="text">
+               <string>HttpRequestProtocol</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="ComboBoxIgnoreScroll" name="httpRequest">
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>32</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_7">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -442,21 +578,61 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_10">
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QCheckBox" name="debugLog">
-              <property name="text">
-               <string>DebugLog</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QWidget" name="permissionWidget" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_28">
+               <property name="text">
+                <string>PermissionTip</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="permission">
+               <property name="minimumSize">
+                <size>
+                 <width>120</width>
+                 <height>28</height>
+                </size>
+               </property>
+               <property name="cursor">
+                <cursorShape>PointingHandCursor</cursorShape>
+               </property>
+               <property name="text">
+                <string>Permission</string>
+               </property>
+               <property name="ButtonStyle" stdset="0">
+                <string>blue</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_8">
@@ -467,12 +643,12 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QCheckBox" name="recordEnable">
+             <widget class="QCheckBox" name="softwareRecording">
               <property name="cursor">
                <cursorShape>PointingHandCursor</cursorShape>
               </property>
               <property name="text">
-               <string>SoftwareRecord</string>
+               <string>SoftwareRecording</string>
               </property>
              </widget>
             </item>
@@ -484,12 +660,12 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QCheckBox" name="hdmi">
+             <widget class="QCheckBox" name="hardwareRecording">
               <property name="cursor">
                <cursorShape>PointingHandCursor</cursorShape>
               </property>
               <property name="text">
-               <string>HdmiCallback</string>
+               <string>HardwareRecording</string>
               </property>
              </widget>
             </item>
@@ -522,6 +698,79 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_15">
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QCheckBox" name="autoDownRate">
+              <property name="text">
+               <string>PlayOrDownloadAutoDownRate</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>12</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_21">
+              <property name="text">
+               <string>PlayWithRate</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="playRate">
+              <property name="minimumSize">
+               <size>
+                <width>120</width>
+                <height>32</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>32</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_9">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="playWithToken">
+            <property name="text">
+             <string>PlayWithToken</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QCheckBox" name="cache">
@@ -580,8 +829,24 @@
           <item>
            <widget class="QWidget" name="logoWidget" native="true">
             <layout class="QGridLayout" name="gridLayout_3">
-             <item row="5" column="1">
-              <widget class="QLineEdit" name="logoBorderColor">
+             <item row="6" column="1">
+              <widget class="QRadioButton" name="top">
+               <property name="cursor">
+                <cursorShape>PointingHandCursor</cursorShape>
+               </property>
+               <property name="text">
+                <string>Top</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">alignY</string>
+               </attribute>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="logoTextColor">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
@@ -593,41 +858,27 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_20">
+             <item row="5" column="1">
+              <widget class="QRadioButton" name="left">
+               <property name="cursor">
+                <cursorShape>PointingHandCursor</cursorShape>
+               </property>
                <property name="text">
-                <string>LogoText</string>
+                <string>Left</string>
                </property>
+               <attribute name="buttonGroup">
+                <string notr="true">alignX</string>
+               </attribute>
               </widget>
              </item>
-             <item row="0" column="1" colspan="3">
-              <widget class="QLineEdit" name="logoText">
-               <property name="placeholderText">
-                <string>LogoTextContent</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="logoTextSize">
-               <property name="maximumSize">
-                <size>
-                 <width>60</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="value">
-                <number>16</number>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="0">
-              <widget class="QLabel" name="label_27">
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_24">
                <property name="text">
-                <string>LogoVAlign</string>
+                <string>LogoBorderSize</string>
                </property>
               </widget>
              </item>
-             <item row="6" column="3">
+             <item row="5" column="3">
               <widget class="QRadioButton" name="right">
                <property name="cursor">
                 <cursorShape>PointingHandCursor</cursorShape>
@@ -644,123 +895,20 @@
               </widget>
              </item>
              <item row="4" column="0">
-              <widget class="QLabel" name="label_24">
-               <property name="text">
-                <string>LogoBorderSize</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QLineEdit" name="logoTextColor">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="placeholderText">
-                <string>ARGB eg:#FF000000</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="2">
-              <widget class="QRadioButton" name="centerY">
-               <property name="cursor">
-                <cursorShape>PointingHandCursor</cursorShape>
-               </property>
-               <property name="text">
-                <string>Center</string>
-               </property>
-               <attribute name="buttonGroup">
-                <string notr="true">alignY</string>
-               </attribute>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="label_26">
-               <property name="text">
-                <string>LogoHAlign</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="QSpinBox" name="logoBorderSize">
-               <property name="maximumSize">
-                <size>
-                 <width>60</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="value">
-                <number>1</number>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
               <widget class="QLabel" name="label_25">
                <property name="text">
                 <string>LogoBorderColor</string>
                </property>
               </widget>
              </item>
-             <item row="1" column="1" colspan="3">
-              <widget class="QLineEdit" name="logoFontName">
-               <property name="placeholderText">
-                <string>LogoFontName</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="1">
-              <widget class="QRadioButton" name="left">
-               <property name="cursor">
-                <cursorShape>PointingHandCursor</cursorShape>
-               </property>
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_20">
                <property name="text">
-                <string>Left</string>
-               </property>
-               <attribute name="buttonGroup">
-                <string notr="true">alignX</string>
-               </attribute>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_22">
-               <property name="text">
-                <string>LogoTextSize</string>
+                <string>LogoText</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_23">
-               <property name="text">
-                <string>LogoTextColor</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="1">
-              <widget class="QRadioButton" name="top">
-               <property name="cursor">
-                <cursorShape>PointingHandCursor</cursorShape>
-               </property>
-               <property name="text">
-                <string>Top</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-               <attribute name="buttonGroup">
-                <string notr="true">alignY</string>
-               </attribute>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_21">
-               <property name="text">
-                <string>LogoFontName</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="3">
+             <item row="6" column="3">
               <widget class="QRadioButton" name="bottom">
                <property name="cursor">
                 <cursorShape>PointingHandCursor</cursorShape>
@@ -773,7 +921,68 @@
                </attribute>
               </widget>
              </item>
+             <item row="1" column="1">
+              <widget class="QSpinBox" name="logoTextSize">
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="value">
+                <number>16</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_23">
+               <property name="text">
+                <string>LogoTextColor</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_27">
+               <property name="text">
+                <string>LogoVAlign</string>
+               </property>
+              </widget>
+             </item>
              <item row="6" column="2">
+              <widget class="QRadioButton" name="centerY">
+               <property name="cursor">
+                <cursorShape>PointingHandCursor</cursorShape>
+               </property>
+               <property name="text">
+                <string>Center</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">alignY</string>
+               </attribute>
+              </widget>
+             </item>
+             <item row="0" column="1" colspan="3">
+              <widget class="QLineEdit" name="logoText">
+               <property name="placeholderText">
+                <string>LogoTextContent</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_22">
+               <property name="text">
+                <string>LogoTextSize</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_26">
+               <property name="text">
+                <string>LogoHAlign</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="2">
               <widget class="QRadioButton" name="centerX">
                <property name="cursor">
                 <cursorShape>PointingHandCursor</cursorShape>
@@ -784,6 +993,32 @@
                <attribute name="buttonGroup">
                 <string notr="true">alignX</string>
                </attribute>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="logoBorderSize">
+               <property name="maximumSize">
+                <size>
+                 <width>60</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="value">
+                <number>1</number>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLineEdit" name="logoBorderColor">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="placeholderText">
+                <string>ARGB eg:#FF000000</string>
+               </property>
               </widget>
              </item>
             </layout>
@@ -1047,6 +1282,16 @@
    <header location="global">titlebar.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>PathEdit</class>
+   <extends>QLineEdit</extends>
+   <header>path-edit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ComboBoxIgnoreScroll</class>
+   <extends>QComboBox</extends>
+   <header>combobox-ignorescroll.h</header>
+  </customwidget>
  </customwidgets>
  <resources>
   <include location="../Resource.qrc"/>
@@ -1054,8 +1299,8 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="alignY"/>
   <buttongroup name="buttonGroup"/>
+  <buttongroup name="alignY"/>
   <buttongroup name="alignX"/>
  </buttongroups>
 </ui>

@@ -205,6 +205,32 @@
                </property>
               </spacer>
              </item>
+             <item>
+              <widget class="QPushButton" name="migrateButton">
+               <property name="text">
+                <string>MigrateVideo</string>
+               </property>
+               <property name="ButtonStyle" stdset="0">
+                <string>blue</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer_14">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Fixed</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
              <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
               <widget class="QPushButton" name="vidButton">
                <property name="minimumSize">
@@ -227,6 +253,9 @@
                </property>
                <property name="text">
                 <string>VID</string>
+               </property>
+               <property name="ButtonStyle" stdset="0">
+                <string>blue</string>
                </property>
               </widget>
              </item>

@@ -14,8 +14,15 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <Dwmapi.h>
-#include "frameless-helper.h"
+#include "win/frameless-helper.h"
+
+#if defined(USE_DUMP) && !defined(_DEBUG) 
+#include <dump/dump.h>
+#endif // USE_DUMP
+#elif __APPLE__
+#include "mac/PermissionDialog.h"
 #endif // WIN32
+
 #include <http/http-manager.h>
 
 #include "AppDef.h"
@@ -24,6 +31,9 @@
 #include "LoginDialog.h"
 #include "MainWindow.h"
 #include "platform.h"
+#include "GlobalConfig.h"
+
+
 
 
 // test
@@ -90,6 +100,7 @@ Application::Application(int &argc, char **argv)
 #endif
 #endif
 
+
 	QApplication::setStyle(QStyleFactory::create("Fusion"));
 	QDir::setCurrent(applicationDirPath());
 	setQuitOnLastWindowClosed(false);
@@ -108,7 +119,7 @@ Application::~Application()
 	slog_info("app exit");
 	slog_release();
 }
-
+ 
 QString Application::GetResourcesDir()
 {
 #ifdef _WIN32
@@ -146,6 +157,22 @@ int Application::AppRun()
 			//MultiPlayerDialog dlg;
 			//dlg.exec();
 		}
+#ifdef __APPLE__
+		{
+			MacPermissionStatus allfiles_permission =
+				CheckPermission(kAllFilesAccess);
+			MacPermissionStatus accessibility_permission =
+				CheckPermission(kAccessibility);
+
+			int permissionsDialogLastShown = globalConfig.Get("General", "MacOSPermissionsDialogLastShown").toInt();
+			if (permissionsDialogLastShown <
+				MACOS_PERMISSIONS_DIALOG_VERSION) {
+				PermissionDialog check(
+					nullptr, allfiles_permission, accessibility_permission);
+				check.exec();
+			}
+		}
+#endif
 		{
 			LoginDialog dlg;
 			dlg.setWindowTitle(QTStr("MainTitle"));
@@ -200,30 +227,7 @@ bool Application::InitConfig()
 		slog_error("failed to open global.ini");
 		return false;
 	}
-	//globalConfig.SetDefault("General", "Theme", APP_THEME);
-	//globalConfig.SetDefault("General", "Language", APP_DEFAULT_LANG);
-
-	globalConfig.SetDefault("Download", "TaskCount", 3);
-	globalConfig.SetDefault("Download", "RetryCount", 0);
-
-	QString videoPath = GetVideoPath();
-	videoPath += "/";
-	videoPath += APP_PROJECT_NAME;
-	QDir().mkpath(videoPath);
-	globalConfig.SetDefault("Download", "FilePath", videoPath);
-
-	videoPath += "/";
-	videoPath += "screenshot";
-	QDir().mkpath(videoPath);
-	globalConfig.SetDefault("Download", "ScreenshotPath", videoPath);
-
-	globalConfig.SetDefault("Video", "HwdecEnable", false);
-	globalConfig.SetDefault("Video", "KeepLastFrame", true);
-#ifdef _WIN32
-	globalConfig.SetDefault("Video", "SoftwareRecord", false);
-	globalConfig.SetDefault("Video", "HdmiCallback", true);
-#endif
-
+	GlobalConfig::InitDefault();
 	return globalConfig.IsOpen();
 }
 void Application::OnDestroyWindow()

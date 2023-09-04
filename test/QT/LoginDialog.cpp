@@ -14,6 +14,7 @@
 #include "Application.h"
 #include "SettingDialog.h"
 #include "MsgBoxDialog.h"
+#include "GlobalConfig.h"
 
 static const char KStrKey[] = { 'K','P','l','v','P','l','a','y','e','r','S','t','r','K','e','y' };
 
@@ -40,7 +41,6 @@ LoginDialog::LoginDialog(QWidget *parent)
 
 	ui->userId->installEventFilter(this);
 	ui->secretKey->installEventFilter(this);
-	ui->readToken->installEventFilter(this);
 	
 	ClearError();
 
@@ -64,19 +64,15 @@ LoginDialog::LoginDialog(QWidget *parent)
 				else if ("SecretKey" == v.at(0)) {
 					ui->secretKey->setText(Decrypt(v.at(1)));
 				}
-				else if ("ReadToken" == v.at(0)) {
-					ui->readToken->setText(Decrypt(v.at(1)));
-				}
 			}
 		}
 		infofile.close();
 	}
 	else {
-		if (App()->GlobalConfig().Get("App", "Remember").toBool()) {
+		if (GlobalConfig::IsRemember()) {
 			ui->remember->setChecked(true);
-			ui->userId->setText(Decrypt(App()->GlobalConfig().Get("App", "UserId").toString()));
-			ui->secretKey->setText(Decrypt(App()->GlobalConfig().Get("App", "SecretKey").toString()));
-			ui->readToken->setText(Decrypt(App()->GlobalConfig().Get("App", "ReadToken").toString()));
+			ui->userId->setText(Decrypt(GlobalConfig::GetUserId()));
+			ui->secretKey->setText(Decrypt(GlobalConfig::GetSecretKey()));
 		}
 	}
 
@@ -97,7 +93,7 @@ bool LoginDialog::eventFilter(QObject *obj, QEvent *e)
 		if (QEvent::KeyPress != e->type()) {
 			break;
 		}
-		if (ui->userId == obj || ui->secretKey == obj || ui->readToken == obj) {
+		if (ui->userId == obj || ui->secretKey == obj) {
 			ClearError();
 		}
 	} while (false);
@@ -119,11 +115,6 @@ void LoginDialog::on_login_clicked(void)
 		SetError(QTStr("EmptySecretKey"));
 		return;
 	}
-	QString readToken = ui->readToken->text().trimmed();
-	if (readToken.isEmpty()) {
-		SetError(QTStr("EmptyReadToken"));
-		return;
-	}
 	loginTimeout->start();
 	ui->login->setEnabled(false);
 
@@ -137,11 +128,10 @@ void LoginDialog::on_login_clicked(void)
 			loginTimeout->stop();
 			ui->login->setEnabled(true);
 			if (result) {
-				App()->GlobalConfig().Set("App", "Remember", ui->remember->isChecked());
-				App()->GlobalConfig().Set("App", "UserId", Encrypt(ui->userId->text()).toStdString().c_str());
-				App()->GlobalConfig().Set("App", "SecretKey", Encrypt(ui->secretKey->text()).toStdString().c_str());
-				App()->GlobalConfig().Set("App", "ReadToken", Encrypt(ui->readToken->text()).toStdString().c_str());
-				App()->GlobalConfig().Save();
+				GlobalConfig::SetRemember(ui->remember->isChecked());
+				GlobalConfig::SetUserId(Encrypt(ui->userId->text()));
+				GlobalConfig::SetSecretKey(Encrypt(ui->secretKey->text()));
+				GlobalConfig::Save();
 				if (QFile::exists("toinfo.debug")) {
 					QFile infofile("info.debug");
 					if (infofile.open(QIODevice::ReadWrite | QIODevice::Text)) {
@@ -149,10 +139,7 @@ void LoginDialog::on_login_clicked(void)
 						infofile.write(userId.toBase64());
 						infofile.write("\n");
 						QByteArray secretKey(QString("SecretKey:%1").arg(Encrypt(ui->secretKey->text())).toUtf8());
-						infofile.write(secretKey.toBase64());
-						infofile.write("\n");
-						QByteArray readToken(QString("ReadToken:%1").arg(Encrypt(ui->readToken->text())).toUtf8());
-						infofile.write(readToken.toBase64());
+						infofile.write(secretKey.toBase64()); 
 						infofile.flush();
 						infofile.close();
 					}
@@ -164,7 +151,7 @@ void LoginDialog::on_login_clicked(void)
 		});
 	}
 	
-	SdkManager::GetManager()->Init(userId, secretKey, readToken);
+	SdkManager::GetManager()->Init(userId, secretKey);
 	SdkManager::GetManager()->SetViewer("polyv", "polyv", "");
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QObject>
-#include <plv-player-core.h>
+#include <plv-player-download.h>
 
 //////////////////////////////////////////////////
 class Downloader : public QObject {
@@ -11,10 +11,10 @@ public:
 	~Downloader(void);
 
 public:
-	int SetVideo(const QString& vid, const QString& path, int rate);
+	int SetInfo(const QString& vid, const QString& path, int rate);
 	int Reset();
 	int Start(bool autoDownRate);
-	int Pause();
+	int Pause(bool pause);
 	int Stop();
 	int Delete();
 	bool IsDownloading();

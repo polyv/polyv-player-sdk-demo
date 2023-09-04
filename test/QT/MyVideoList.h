@@ -13,7 +13,7 @@ public:
 
 public:
 	//void Request(const QString& vid);
-	void RequestAll(void);	
+	void RequestAll(int page = 1, int pageSize = 10);	
 	void RequestVid(const QString& vid);
 
 	QString GetToken(const QString& vid);
@@ -24,19 +24,23 @@ public:
 
 private:
 	void Run(void);
-	void Request(int page, int count, const QString& vid);
-	void ParseResult(bool result, int page, int count, const QString& data);
+	//void Request(int page, int count, const QString& vid);
+	//void ParseResult(bool result, int page, int count, const QString& data);
+
+private slots:
+	void OnEndRequest();
 private:
 	//std::thread::id taskId = std::thread::id();
 	bool isExit = false;
 	std::mutex lock;
 
+	volatile bool started = false;
 	struct Item {
 		int page;
 		int count;
 		QString vid;
 	};
-	QList<Item> vids;
+	QList<Item> taskList;
 	std::thread* requestHttp = nullptr;
 };
 

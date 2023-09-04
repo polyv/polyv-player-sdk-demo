@@ -89,7 +89,7 @@ QPushButton {
 QPushButton:disabled {
 	color:#9E9E9E;
 	border:none;
-	background: #E9ECEE;
+	background: transparent;
 }
 QPushButton::menu-indicator {
     background:transparent;
@@ -110,6 +110,7 @@ QPushButton[ButtonStyle="normal"]:pressed{
 }
 
 QPushButton[ButtonStyle="blue"]{
+	font: normal 14px ;
 	color:#FAFAFA;
 	background:rgba(10,141,255,1);
 	border-radius:2px ;
@@ -122,9 +123,9 @@ QPushButton[ButtonStyle="blue"]:pressed{
 }
 
 QPushButton[ButtonStyle="red"]{
+	font: normal 14px ;
 	color:#FAFAFA;
 	border-radius:2px;
-	text-align:center;
 	background:#F44336;
 }
 QPushButton[ButtonStyle="red"]:hover{
@@ -408,6 +409,15 @@ QProgressBar::corner {
     border: none;
 }*/
 
+QPushButton#openDir{
+	image: url(:/res/images/control/open_normal.svg);
+}
+QPushButton#openDir:hover{
+	image: url(:/res/images/control/open_active.svg);
+}
+QPushButton#openDir:pressed{
+	image: url(:/res/images/control/open_active.svg);
+}
 /******************************************/
 TitleBar QWidget#titleBg{
 	background-color:#0F75FF;
@@ -597,19 +607,6 @@ MainWindow QPushButton#localButton:checked:hover{
 MainWindow QPushButton#downloadingButton:checked:pressed,
 MainWindow QPushButton#localButton:checked:pressed{
 	color:rgba(10,141,255,0.8);
-}
-
-MainWindow QPushButton#vidButton{
-	font: normal 14px ;
-	color:#FAFAFA;
-	background:rgba(10,141,255,1);
-	border-radius:2px ;
-}
-MainWindow QPushButton#vidButton:hover{
-	background:rgba(10,141,255,0.8);
-}
-MainWindow QPushButton#vidButton:pressed{
-	background:rgba(10,141,255,0.9);
 }
 
 MainWindow QToolButton#myVideoButton{
@@ -998,6 +995,23 @@ PlayerControl QWidget#loading{
 }
 
 /******************************************/
+PermissionDialog{
+	background: #ffffff;
+}
+PermissionDialog QPushButton{
+	border:none;
+	border-radius: 2px;
+	background: #0A8DFF;
+	color: #FFFFFF;
+	font:normal 14px ;
+}
+PermissionDialog QPushButton:hover{
+	background:rgba(10,141,255,0.8);
+}
+PermissionDialog QPushButton:pressed{
+	background:rgba(10,141,255,0.9);
+}
+/******************************************/
 LoginDialog{
 	background: transparent;
 }
@@ -1062,83 +1076,120 @@ LoginDialog QCheckBox#errorButton::indicator:checked {
 }
 
 /******************************************/
-ParamDialog QWidget#mainWidget{
+ParamDialog QWidget#mainWidget,
+MigrateDialog QWidget#mainWidget{
 	background-color:#ffffff;
 	/*border:1px solid #EDF1F7;*/
 }
-ParamDialog TitleBar QWidget#titleBg{
+ParamDialog TitleBar QWidget#titleBg,
+MigrateDialog TitleBar QWidget#titleBg{
 	background-color:#ffffff;
 }
-ParamDialog TitleBar QLabel#titleLabel{
+ParamDialog TitleBar QLabel#titleLabel,
+MigrateDialog TitleBar QLabel#titleLabel{
 	color:#668196;
 }
-ParamDialog QPushButton#minimize{
+ParamDialog QPushButton#minimize,
+MigrateDialog QPushButton#minimize{
 	image: url(:res/images/title/minimize_normal2.svg);
 }
-ParamDialog QPushButton#minimize:hover{
+ParamDialog QPushButton#minimize:hover,
+MigrateDialog QPushButton#minimize:hover{
 	image: url(:res/images/title/minimize_active2.svg);
 }
-ParamDialog QPushButton#minimize:pressed{
+ParamDialog QPushButton#minimize:pressed,
+MigrateDialog QPushButton#minimize:pressed{
    image: url(:res/images/title/minimize_active2.svg);
 }
-ParamDialog TitleBar QPushButton#close{
+ParamDialog TitleBar QPushButton#close,
+MigrateDialog TitleBar QPushButton#close{
 	image: url(:res/images/title/close_normal2.svg);
 }
-ParamDialog TitleBar QPushButton#close:hover{
+ParamDialog TitleBar QPushButton#close:hover,
+MigrateDialog TitleBar QPushButton#close:hover{
 	image: url(:res/images/title/close_active2.svg);
 }
-ParamDialog TitleBar QPushButton#close:pressed{
+ParamDialog TitleBar QPushButton#close:pressed,
+MigrateDialog TitleBar QPushButton#close:pressed{
 	image: url(:res/images/title/close_active2.svg);
 }
-ParamDialog QWidget#contentWidget{
+ParamDialog QWidget#contentWidget,
+MigrateDialog QWidget#contentWidget{
 	border-top:1px solid #EFEFEF;
 }
-ParamDialog QHeaderView {
+ParamDialog QHeaderView{
     background: white;
 	border: none;
 }
-ParamDialog QHeaderView::section {
+MigrateDialog QHeaderView{
+    font: normal 14px ;
+    color: #668196;
+    background: #FAFAFA;
+}
+ParamDialog QHeaderView::section{
     background: white;
 	border: none;
 }
-ParamDialog QTableWidget {
+ParamDialog QTableWidget,
+MigrateDialog QTableWidget{
     border: none;
     color: #668196;
 	font: normal 14px ;
     background: white;
     alternate-background-color: #F8F8FB;
 }
-ParamDialog QTableWidget::item {
+ParamDialog QTableWidget::item,
+MigrateDialog QTableWidget::item{
     border: none;
 	color: #668196;
 	font: normal 14px ;
+	padding-left: 6px;
+	padding-right: 6px;
 }
-ParamDialog QTableWidget::item:alternate {
-    padding: 0px;
+ParamDialog QTableWidget::item:alternate,
+MigrateDialog QTableWidget::item:alternate{
+	padding-left: 6px;
+	padding-right: 6px;
     background: #F8F8FB;
+}
+MigrateDialog QPushButton#delButton{
+	image: url(:res/images/title/close_normal2.svg);
+}
+MigrateDialog QPushButton#delButton:hover{
+	image: url(:res/images/title/close_active2.svg);
+}
+MigrateDialog QPushButton#delButton:pressed{
+	image: url(:res/images/title/close_active2.svg);
 }
 
 /******************************************/
-VidDialog QWidget#mainWidget{
+InputDialog QWidget#mainWidget,
+DetectRecordingDialog QWidget#mainWidget{
 	background-color:#ffffff;
 	/*border:1px solid #EDF1F7;*/
 }
-VidDialog TitleBar QWidget#titleBg{
+InputDialog TitleBar QWidget#titleBg,
+DetectRecordingDialog TitleBar QWidget#titleBg{
 	background-color:#ffffff;
 }
-VidDialog TitleBar QLabel#titleLabel{
+InputDialog TitleBar QLabel#titleLabel,
+DetectRecordingDialog TitleBar QLabel#titleLabel{
 	color:#668196;
 }
-VidDialog TitleBar QPushButton#close{
+InputDialog TitleBar QPushButton#close,
+DetectRecordingDialog TitleBar QPushButton#close{
 	image: url(:res/images/title/close_normal2.svg);
 }
-VidDialog TitleBar QPushButton#close:hover{
+InputDialog TitleBar QPushButton#close:hover,
+DetectRecordingDialog TitleBar QPushButton#close:hover{
 	image: url(:res/images/title/close_active2.svg);
 }
-VidDialog TitleBar QPushButton#close:pressed{
+InputDialog TitleBar QPushButton#close:pressed,
+DetectRecordingDialog TitleBar QPushButton#close:pressed{
 	image: url(:res/images/title/close_active2.svg);
 }
-VidDialog QWidget#contentWidget{
+InputDialog QWidget#contentWidget,
+DetectRecordingDialog QWidget#contentWidget{
 	border-top:1px solid #EFEFEF;
 }
 /******************************************/

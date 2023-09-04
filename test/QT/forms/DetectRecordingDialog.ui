@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>DeviceWarnDialog</class>
- <widget class="QDialog" name="DeviceWarnDialog">
+ <class>DetectRecordingDialog</class>
+ <widget class="QDialog" name="DetectRecordingDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Setting</string>
+   <string>DetectRecording</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
@@ -79,9 +79,9 @@
           <number>24</number>
          </property>
          <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-          <widget class="QLabel" name="warnLabel">
+          <widget class="QLabel" name="tips">
            <property name="text">
-            <string>HDMIWarn</string>
+            <string/>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>

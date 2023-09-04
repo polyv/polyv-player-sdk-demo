@@ -49,7 +49,7 @@ bool ToolButton::eventFilter(QObject *watched, QEvent *event)
 					setIcon(normalIcon);
 				}
 			} else {
-				setIcon(disableIcon);
+				setIcon(disableIcon.isNull() ? normalIcon : disableIcon);
 			}
 		} else if (event->type() == QEvent::Enter) {
 			if (isEnabled()) {
@@ -59,7 +59,7 @@ bool ToolButton::eventFilter(QObject *watched, QEvent *event)
 					setIcon(activeIcon);
 				}
 			} else {
-				setIcon(disableIcon);
+				setIcon(disableIcon.isNull() ? normalIcon : disableIcon);
 			}
 		} else if (event->type() == QEvent::MouseButtonRelease) {
 			if (isCheckable()) {

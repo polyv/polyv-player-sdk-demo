@@ -16,26 +16,21 @@ void SetProcessPriority(const char *priority);
 #endif
 
 #ifdef __APPLE__
-namespace ns {
-enum NSWindowCollectionBehavior {
-    NSWindowCollectionBehaviorDefault = 0,
-    NSWindowCollectionBehaviorCanJoinAllSpaces = 1 << 0,
-    NSWindowCollectionBehaviorMoveToActiveSpace = 1 << 1,
-    NSWindowCollectionBehaviorManaged = 1 << 2,
-    NSWindowCollectionBehaviorTransient = 1 << 3,
-    NSWindowCollectionBehaviorStationary = 1 << 4,
-    NSWindowCollectionBehaviorParticipatesInCycle = 1 << 5,
-    NSWindowCollectionBehaviorIgnoresCycle = 1 << 6,
-    NSWindowCollectionBehaviorFullScreenPrimary = 1 << 7,
-    NSWindowCollectionBehaviorFullScreenAuxiliary = 1 << 8,
-    NSWindowCollectionBehaviorFullScreenAllowsTiling = 1 << 11,
-    NSWindowCollectionBehaviorFullScreenDisallowsTiling = 1 << 12
-};
-}
-void SetCollectionBehavior(QWidget *window, ns::NSWindowCollectionBehavior behavior, bool on = true);
-void EnableOSXVSync(bool enable);
-void EnableOSXDockIcon(bool enable);
-bool isInBundle();
-std::string GetBundlePath();
-std::string GetBundleResourcesPath();
+typedef enum {
+	kAllFilesAccess = 0,
+	kAccessibility
+} MacPermissionType;
+
+typedef enum {
+	kPermissionNotDetermined = 0,
+	kPermissionRestricted = 1,
+	kPermissionDenied = 2,
+	kPermissionAuthorized = 3,
+} MacPermissionStatus;
+
+MacPermissionStatus CheckPermissionWithPrompt(MacPermissionType type,
+	bool prompt_for_permission);
+#define CheckPermission(x) CheckPermissionWithPrompt(x, false)
+#define RequestPermission(x) CheckPermissionWithPrompt(x, true)
+void OpenMacOSPrivacyPreferences(const char* tab);
 #endif

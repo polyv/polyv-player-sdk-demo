@@ -24,6 +24,7 @@
 #include "WidgetHelper.h"
 #include "TipsWidget.h"
 #include "MsgBoxDialog.h"
+#include "GlobalConfig.h"
 
 DownloadManager::DownloadManager(void)
 {
@@ -292,8 +293,12 @@ VideoCoverWidget::VideoCoverWidget(QWidget* parent, bool local, const SharedVide
 	QPushButton* playButton = new StatusButton(page2, "playButton",
 		localPlay ? QTStr("LocalPlay") : QTStr("OnlinePlay"), QSize(24, 24));
 	connect(playButton, &QPushButton::clicked, this, [this] {
+		int rate = GlobalConfig::GetPlayWithRate();
+		if (-1 == rate) {
+			rate = curRate;
+		}
 		QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(), 
-			"OnPlayVideo", Q_ARG(bool, localPlay), Q_ARG(const SharedVideoPtr&, videoInfo), Q_ARG(int, curRate));
+			"OnPlayVideo", Q_ARG(bool, localPlay), Q_ARG(const SharedVideoPtr&, videoInfo), Q_ARG(int, rate));
 	});
 	((QHBoxLayout*)page2->layout())->addWidget(playButton, 0, Qt::AlignCenter);
 
@@ -337,6 +342,7 @@ VideoTitleWidget::VideoTitleWidget(QWidget* parent, bool showVID, const SharedVi
 	setLayout(layout);
 	textLabel = new QLabel(this);
 	textLabel->setObjectName("textLabel");
+	textLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 	textLabel->setText(QT_UTF8(video->title.c_str()));
 	if (showVID) {
 		layout->addStretch(1);
@@ -445,11 +451,11 @@ VideoDownloadWidget::VideoDownloadWidget(QWidget* parent, const SharedVideoPtr& 
 	speedTimer->setInterval(1000);
 	connect(speedTimer, SIGNAL(timeout()), this, SLOT(OnSpeedTimer()));
 
-	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
+	QString path = GlobalConfig::GetSaveVideoPath();
 	video->filePath = QT_TO_UTF8(path);
 	video->rate = rate;
-	downloader->SetVideo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
-	int code = downloader->Start(true);
+	downloader->SetInfo(QString::fromStdString(video->vid), QString::fromStdString(video->filePath), rate);
+	int code = downloader->Start(GlobalConfig::IsAutoDownRate());
 
 	if (E_NO_ERR != code) {
 		tipsLabel->setText(QTStr("DownloadError"));
@@ -492,7 +498,7 @@ void VideoDownloadWidget::OnDownloadResultHandler(int rate, int code)
 		OnDownloadErrorHandler(code);
 		switch (code) 
 		{
-		case E_ABORT_DOWNLOAD:
+		case E_ABORT_OPERATION:
 		case E_DELETE_VIDEO:
 			videoInfo->SetDownloadStatus(DOWNLOAD_OK, curRate);
 			break;
@@ -525,11 +531,11 @@ void VideoDownloadWidget::OnAttributeChanged(int attribute, const SharedVideoPtr
 			break;
 		case DOWNLOAD_RUN:
 			SetControlSheet(tipsLabel, "LabelStyle", "");
-			downloader->Start(true);
+			downloader->Start(GlobalConfig::IsAutoDownRate());
 			speedTimer->start();
 			break;
 		case DOWNLOAD_PAUSE:
-			downloader->Pause();
+			downloader->Pause(true);
 			speedTimer->stop();
 			tipsLabel->setText(QTStr("Pause"));
 			speedLabel->setText(QString());
@@ -627,23 +633,29 @@ VideoActionWidget::VideoActionWidget(QWidget* parent, ActionType action, const S
 	case ACTION_DOWNLOAD:
 		downloadBtn = new StatusButton(this, "downloadButton", QTStr("Download"), QSize(24, 24));
 		connect(downloadBtn, &QPushButton::clicked, this, [this] {
-			QPointer<QMenu> popup = new QMenu(this);
-			auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, int rate, const SharedVideoPtr& video) {
-				QAction *item = new QAction(name, this);
-				popup->addAction(item);
-				connect(item, &QAction::triggered, this, [this, rate](bool pause) {
-					QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(),
-						"OnAppendDownloadVideo", Q_ARG(int, rate), Q_ARG(const SharedVideoPtr&, videoInfo));
-				});
-				if (rate > video->rateCount) {
-					item->setEnabled(false);
-				}
-			};
-			AddAction(popup, QTStr("SD"), VIDEO_RATE_SD, videoInfo);
-			AddAction(popup, QTStr("HD"), VIDEO_RATE_HD, videoInfo);
-			AddAction(popup, QTStr("BD"), VIDEO_RATE_BD, videoInfo);
-			auto pos = downloadBtn->mapToGlobal(downloadBtn->pos());
-			popup->exec(QPoint(pos.x() - 12, pos.y() - 12));
+			if (videoInfo->rateCount > 0) {
+				QPointer<QMenu> popup = new QMenu(this);
+				auto AddAction = [this](QPointer<QMenu>& popup, const QString& name, int rate, const SharedVideoPtr& video) {
+					QAction* item = new QAction(name, this);
+					popup->addAction(item);
+					connect(item, &QAction::triggered, this, [this, rate](bool pause) {
+						QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(),
+							"OnAppendDownloadVideo", Q_ARG(int, rate), Q_ARG(const SharedVideoPtr&, videoInfo));
+						});
+					if (rate > video->rateCount) {
+						item->setEnabled(false);
+					}
+				};
+				AddAction(popup, QTStr("LD"), VIDEO_RATE_LD, videoInfo);
+				AddAction(popup, QTStr("SD"), VIDEO_RATE_SD, videoInfo);
+				AddAction(popup, QTStr("HD"), VIDEO_RATE_HD, videoInfo);
+				auto pos = downloadBtn->mapToGlobal(downloadBtn->pos());
+				popup->exec(QPoint(pos.x() - 12, pos.y() - 12)); 
+			}
+			else {
+				QMetaObject::invokeMethod((QWidget*)App()->GetMainWindow(),
+					"OnAppendDownloadVideo", Q_ARG(int, VIDEO_RATE_LD), Q_ARG(const SharedVideoPtr&, videoInfo));
+			}
 		});
 		layout->addWidget(downloadBtn, 0, Qt::AlignCenter);
 		break;

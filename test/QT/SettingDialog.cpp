@@ -4,10 +4,15 @@
 #include <QFileDialog>
 #include <QDesktopServices>
 
+#include "GlobalConfig.h"
 #include "Application.h"
 #include "WidgetHelper.h"
 #include "SdkManager.h"
+#include "platform.h"
 
+#ifdef __APPLE__
+#include "mac/PermissionDialog.h"
+#endif // __APPLE__
 
 SettingDialog::SettingDialog(QWidget *parent) 
 	: QDialog(parent)
@@ -23,61 +28,35 @@ SettingDialog::SettingDialog(QWidget *parent)
 	f |= Qt::FramelessWindowHint;
 #endif
 	setWindowFlags(f);
-	//setAttribute(Qt::WA_DeleteOnClose, true);
 	ui->titleBar->Init(this, TITLE_CLOSE_BTN);
 	ui->titleBar->SetTitleable(true);
 	ui->titleBar->SetTitleName(QTStr("Setting"));
 	ui->titleBar->SetLogoable(false, QSize(188, 20));
 
-	SetComboxListView(ui->taskCount);
-	const int maxCount = 6;
-	ui->taskCount->blockSignals(true);
-	for (int i = 1; i <= maxCount; ++i) {
-		ui->taskCount->addItem(QString("%1").arg(i), i);
-	}
-	int count = App()->GlobalConfig().Get("Download", "TaskCount").toInt();
-	ui->taskCount->setCurrentIndex((count > 0 && count <= maxCount) ? count - 1 : 3 - 1);
-	ui->taskCount->blockSignals(false);
+	InitTaskCount();
+	InitRetryCount();
+	InitVideoOutput();
+	InitLogLevel();
+	InitHttpRequest();
+	InitPlayRate();
 
-	SetComboxListView(ui->retry);
-	ui->retry->blockSignals(true);
-	for (int i = 0; i <= maxCount; ++i) {
-		ui->retry->addItem(0 == i ? QTStr("UnlimitRetry") : QString("%1").arg(i), i);
-	}
-	count = App()->GlobalConfig().Get("Download", "RetryCount").toInt();
-	ui->retry->setCurrentIndex(count <= maxCount ? count : 0);
-	ui->retry->blockSignals(false);
-
-
-	QString path = App()->GlobalConfig().Get("Download", "FilePath").toString();
-	ui->pathEdit->setText(path);
-	path = App()->GlobalConfig().Get("Download", "ScreenshotPath").toString();
-	ui->screenshotPath->setText(path);
-	ui->keepLastFrame->setChecked(App()->GlobalConfig().Get("Video", "KeepLastFrame").toBool());
-	ui->hwdecEnable->setChecked(App()->GlobalConfig().Get("Video", "HwdecEnable").toBool());
-
-	ui->debugLog->setChecked(App()->GlobalConfig().Get("App", "EnableDebugLog", true).toBool());
-
+	ui->logPath->setText(GlobalConfig::GetLogPath());
+	ui->logPath->setCursorPosition(0);
+	ui->videoPath->setText(GlobalConfig::GetSaveVideoPath());
+	ui->videoPath->setCursorPosition(0);
+	ui->screenshotPath->setText(GlobalConfig::GetSaveScreenshotPath());
+	ui->screenshotPath->setCursorPosition(0);
+	
 #ifdef _WIN32
-	ui->recordEnable->setChecked(App()->GlobalConfig().Get("Video", "SoftwareRecord").toBool());
-	ui->hdmi->setChecked(App()->GlobalConfig().Get("Video", "HdmiCallback").toBool());
-#else
-	ui->recordEnable->setVisible(false);
-	ui->hdmi->setVisible(false);
-
-	while (ui->videoOutput->count() != 2) {
-		ui->videoOutput->removeItem(VIDEO_OUTPUT_GPU + 1);
-	}
-#endif // _WIN32
-
-	ui->videoOutput->blockSignals(true);
-	int type = App()->GlobalConfig().Get("Video", "VideoOutput").toInt();
-	ui->videoOutput->setCurrentIndex(type);
-	ui->videoOutput->blockSignals(false);
-
-
-	int seek = App()->GlobalConfig().Get("Video", "VideoPlaySeek").toInt();
-	ui->seek->setValue(seek);
+	ui->permissionWidget->setVisible(false);
+#endif// _WIN32
+	ui->seek->setValue(GlobalConfig::GetVideoPlaySeek());
+	ui->softwareRecording->setChecked(GlobalConfig::IsSoftwareRecording());
+	ui->hardwareRecording->setChecked(GlobalConfig::IsHardwareRecording());
+	ui->keepLastFrame->setChecked(GlobalConfig::IsKeepLastFrame());
+	ui->hwdecEnable->setChecked(GlobalConfig::IsHwdecEnable());
+	ui->autoDownRate->setChecked(GlobalConfig::IsAutoDownRate());
+	ui->playWithToken->setChecked(GlobalConfig::IsPlayWithToken());
 
 	InitOSDConfig();
 	InitLogoConfig();
@@ -91,64 +70,83 @@ SettingDialog::~SettingDialog()
 
 void SettingDialog::closeEvent(QCloseEvent* e)
 {
-	auto& config = App()->GlobalConfig();
-	bool enableDebugLog = config.Get("App", "EnableDebugLog").toBool();
-	int oldType = config.Get("Video", "VideoOutput").toInt();
-	auto oldKeepLastFrame = config.Get("Video", "KeepLastFrame").toBool();
-	auto oldHwdecEnable = config.Get("Video", "HwdecEnable").toBool();
-	int count = ui->taskCount->currentData().toInt();
-	int retryCount = ui->retry->currentData().toInt();
-	int type = ui->videoOutput->currentIndex();
+	GlobalConfig::SetAutoDownRate(ui->autoDownRate->isChecked());
+	GlobalConfig::SetPlayWithToken(ui->playWithToken->isChecked());
 
-	config.Set("App", "EnableDebugLog", ui->debugLog->isChecked());
-	
-	config.Set("Download", "TaskCount", count);
-	config.Set("Download", "RetryCount", retryCount);
-	config.Set("Download", "FilePath", QT_TO_UTF8(ui->pathEdit->text()));
-	config.Set("Download", "ScreenshotPath", QT_TO_UTF8(ui->screenshotPath->text()));
-	
-	config.Set("Video", "KeepLastFrame", ui->keepLastFrame->isChecked());
-	config.Set("Video", "VideoOutput", type);
-	config.Set("Video", "HwdecEnable", ui->hwdecEnable->isChecked());
+	auto logPath = GlobalConfig::GetLogPath();
+	if (logPath != ui->logPath->text()) {
+		GlobalConfig::SetLogPath(ui->logPath->text());
+		SdkManager::GetManager()->SetLogPath();
+	}
+	auto videoPath = GlobalConfig::GetSaveVideoPath();
+	if (videoPath != ui->videoPath->text()) {
+		GlobalConfig::SetSaveVideoPath(ui->videoPath->text());
+	}
+	auto screenshotPath = GlobalConfig::GetSaveScreenshotPath();
+	if (screenshotPath != ui->screenshotPath->text()) {
+		GlobalConfig::SetSaveScreenshotPath(ui->screenshotPath->text());
+	}
+	GlobalConfig::SetTaskCount(ui->taskCount->currentData().toInt());
+	GlobalConfig::SetRetryCount(ui->retryCount->currentData().toInt());
 
-	config.Set("Video", "VideoPlaySeek", ui->seek->value());
-	if (oldHwdecEnable != ui->hwdecEnable->isChecked()) {
+	auto outputType = GlobalConfig::GetVideoOutput();
+	if (outputType != ui->videoOutput->currentData().toInt()) {
+		GlobalConfig::SetVideoOutput(ui->videoOutput->currentData().toInt());
+		GlobalConfig::SetVideoOutputContext(ui->videoOutputContext->currentText());
+		SdkManager::GetManager()->SetVideoOutputDevice();
+	}
+	auto playRate = GlobalConfig::GetPlayWithRate();
+	if (playRate != ui->playRate->currentData().toInt()) {
+		GlobalConfig::SetPlayWithRate(ui->playRate->currentData().toInt());
+	}
+	auto logLevel = GlobalConfig::GetLogLevel();
+	if (logLevel != ui->logLevel->currentData().toInt()) {
+		GlobalConfig::SetLogLevel(ui->logLevel->currentData().toInt());
+		SdkManager::GetManager()->SetLogLevel();
+	}
+	auto logCallback = GlobalConfig::IsLogCallback();
+	if (logCallback != ui->logCallback->isChecked()) {
+		GlobalConfig::SetLogCallback(ui->logCallback->isChecked());
+		SdkManager::GetManager()->SetLogCallback();
+	}
+	auto httpRequest = GlobalConfig::GetHttpRequest();
+	if (httpRequest != ui->httpRequest->currentData().toInt()) {
+		GlobalConfig::SetHttpRequest(ui->httpRequest->currentData().toInt());
+		SdkManager::GetManager()->SetHttpRequest();
+	}
+	GlobalConfig::SetVideoPlaySeek(ui->seek->value());
+
+	auto softwareRecording = GlobalConfig::IsSoftwareRecording();
+	if (softwareRecording != ui->softwareRecording->isChecked()) {
+		GlobalConfig::SetSoftwareRecording(ui->softwareRecording->isChecked());
+		SdkManager::GetManager()->SetSoftwareRecording();
+	}
+
+	auto hardwareRecording = GlobalConfig::IsHardwareRecording();
+	if (hardwareRecording != ui->hardwareRecording->isChecked()) {
+		GlobalConfig::SetHardwareRecording(ui->hardwareRecording->isChecked());
+		SdkManager::GetManager()->SetHardwareRecording();
+	}
+
+	auto hwdecEnable = GlobalConfig::IsHwdecEnable();
+	if (hwdecEnable != ui->hwdecEnable->isChecked()) {
+		GlobalConfig::SetHwdecEnable(ui->hwdecEnable->isChecked());
 		SdkManager::GetManager()->SetHwdecEnable();
 	}
-	if (enableDebugLog != ui->debugLog->isChecked()) {
-		SdkManager::GetManager()->SetDebugLog();
-	}
-#ifdef _WIN32
-	auto oldRecord = config.Get("Video", "SoftwareRecord").toBool();
-	auto oldHdmi = config.Get("Video", "HdmiCallback").toBool();
 
-	config.Set("Video", "SoftwareRecord", ui->recordEnable->isChecked());
-	config.Set("Video", "HdmiCallback", ui->hdmi->isChecked());
-	if (oldRecord != ui->recordEnable->isChecked()) {
-		SdkManager::GetManager()->SetSoftwareRecord((void*)((QWidget*)App()->GetMainWindow())->winId(),
-			ui->recordEnable->isChecked());
-	}
-	if (oldHdmi != ui->hdmi->isChecked()) {
-		SdkManager::GetManager()->SetHdmiRecord(ui->hdmi->isChecked());
-	}
-#endif // _WIN32
-	
-	config.Save();
-	if (oldKeepLastFrame != ui->keepLastFrame->isChecked()) {
+	auto keepLastFrame = GlobalConfig::IsKeepLastFrame();
+	if (keepLastFrame != ui->keepLastFrame->isChecked()) {
+		GlobalConfig::SetKeepLastFrame(ui->keepLastFrame->isChecked());
 		SdkManager::GetManager()->SetKeepLastFrame();
 	}
-	if (oldType != type) {
-		SdkManager::GetManager()->SetVideoOutputDevice((VIDEO_OUTPUT_DEVICE)type);
-	}
-	SdkManager::GetManager()->SetRetryCount(retryCount);
 
 	auto & cacheConfig = Player::GetCacheConfig();
 	cacheConfig.enable = ui->cache->isChecked();
 	cacheConfig.maxCacheBytes = ui->cacheBytes->text().toInt();
 	cacheConfig.maxCacheSeconds = ui->cacheSeconds->text().toInt();
-	config.Set("Video", "EnableCache", cacheConfig.enable);
-	config.Set("Video", "MaxCacheBytes", cacheConfig.maxCacheBytes);
-	config.Set("Video", "MaxCacheSeconds", cacheConfig.maxCacheSeconds);
+	GlobalConfig::SetVideoCache(cacheConfig.enable);
+	GlobalConfig::SetMaxCacheBytes(cacheConfig.maxCacheBytes);
+	GlobalConfig::SetMaxCacheSeconds(cacheConfig.maxCacheSeconds);
 	
 	auto & osdConfig = Player::GetOSDConfig();
 	osdConfig.enable = ui->osd->isChecked();
@@ -161,63 +159,53 @@ void SettingDialog::closeEvent(QCloseEvent* e)
 	osdConfig.displayInterval = ui->osdDisplayInterval->value();
 	osdConfig.fadeDuration = ui->osdFadeDuration->value();
 	ui->osdRoll->isChecked() ? osdConfig.animationEffect = 0 : osdConfig.animationEffect = 1;
-	config.Set("Video", "EnableOSD", osdConfig.enable);
+	GlobalConfig::SetVideoOsd(osdConfig.enable);
 
 	auto & logoConfig = Player::GetLogoConfig();
 	logoConfig.enable = ui->logo->isChecked();
 	logoConfig.text = ui->logoText->text();
-	logoConfig.textFontName = ui->logoFontName->text();
 	logoConfig.textSize = ui->logoTextSize->value();
 	logoConfig.textColor = ui->logoTextColor->text();
 	logoConfig.borderSize = ui->logoBorderSize->value();
 	logoConfig.borderColor = ui->logoBorderColor->text();
 	logoConfig.alignX = ui->left == ui->alignX->checkedButton() ? -1 : (ui->right == ui->alignX->checkedButton() ? 1 : 0);
 	logoConfig.alignY = ui->top == ui->alignY->checkedButton() ? -1 : (ui->bottom == ui->alignY->checkedButton() ? 1 : 0);
-	config.Set("Video", "EnableLogo", logoConfig.enable);
+	GlobalConfig::SetVideoLogo(logoConfig.enable);
+
+	GlobalConfig::Save();
 }
 
-void SettingDialog::on_pathButton_clicked()
-{
-	QString dir = QFileDialog::getExistingDirectory(this,
-		QTStr("SelectDirectory"),
-		ui->pathEdit->text(),
-		QFileDialog::ShowDirsOnly |
-		QFileDialog::DontResolveSymlinks);
-	if (dir.isEmpty()) {
-		return;
-	}
-	ui->pathEdit->setText(dir);
-}
 
-void SettingDialog::on_screenshotButton_clicked(void)
+static void OpenDir(QLineEdit* edit)
 {
-	QString dir = QFileDialog::getExistingDirectory(this,
-		QTStr("SelectDirectory"),
-		ui->screenshotPath->text(),
-		QFileDialog::ShowDirsOnly |
-		QFileDialog::DontResolveSymlinks);
-	if (dir.isEmpty()) {
-		return;
+	QString path = edit->text();
+	if (!path.isEmpty()) {
+		QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 	}
-	ui->screenshotPath->setText(dir);
 }
-
-void SettingDialog::on_openShotDir_clicked()
+void SettingDialog::on_logBtn_clicked()
 {
-	QString path = ui->screenshotPath->text();
-	if (path.isEmpty()) {
-		return;
-	}
-	QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+	OpenDir(ui->logPath);
 }
-
-void SettingDialog::on_openDownloadDir_clicked(void)
+void SettingDialog::on_videoBtn_clicked()
 {
-	QString path = ui->pathEdit->text();
-	if (path.isEmpty()) {
-		return;
-	}
-	QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+	OpenDir(ui->videoPath);
+}
+void SettingDialog::on_screenshotBtn_clicked(void)
+{
+	OpenDir(ui->screenshotPath);
+}
+void SettingDialog::on_permission_clicked()
+{
+#ifdef __APPLE__
+	MacPermissionStatus allfiles_permission =
+		CheckPermission(kAllFilesAccess);
+	MacPermissionStatus accessibility_permission =
+		CheckPermission(kAccessibility);	
+	PermissionDialog dlg(
+		nullptr, allfiles_permission, accessibility_permission);
+	dlg.exec();
+#endif
 }
 
 void SettingDialog::on_osd_clicked(bool enable)
@@ -257,7 +245,6 @@ void SettingDialog::InitLogoConfig(void)
 	auto & logo = Player::GetLogoConfig();
 	ui->logo->setChecked(logo.enable);
 	ui->logoText->setText(logo.text);
-	ui->logoFontName->setText(logo.textFontName);
 	ui->logoTextSize->setValue(logo.textSize);
 	ui->logoTextColor->setText(logo.textColor);
 	ui->logoBorderColor->setText(logo.borderColor);
@@ -280,3 +267,88 @@ void SettingDialog::InitCacheConfig(void)
 
 	on_cache_clicked(config.enable);
 }
+
+static void InitComboxListView(QComboBox* list, int value, const QList<SdkManager::ValueItem>& values)
+{
+	SetComboxListView(list);
+	list->blockSignals(true);
+	for (auto& it : values) {
+		it.defValue ? list->addItem(it.name + QTStr("DefaultValue"), it.value) :
+			list->addItem(it.name, it.value);
+	}
+	if (-1 != value) {
+		for (int i = 0; i < list->count(); ++i) {
+			if (value == list->itemData(i).toInt()) {
+				list->setCurrentIndex(i);
+				break;
+			}
+		}
+	}
+	
+	list->blockSignals(false);
+}
+static void InitComboxListView(QComboBox* list, int value, const QList<int>& values)
+{
+	SetComboxListView(list);
+	list->blockSignals(true);
+	for (auto& it : values) {
+		list->addItem(QString("%1").arg(it), it);
+	}
+	if (-1 != value) {
+		for (int i = 0; i < list->count(); ++i) {
+			if (value == list->itemData(i).toInt()) {
+				list->setCurrentIndex(i);
+				break;
+			}
+		}
+	}
+	list->blockSignals(false);
+}
+
+void SettingDialog::InitTaskCount()
+{
+	InitComboxListView(ui->taskCount, GlobalConfig::GetTaskCount(), { 1,2,3,4,5,6 });
+}
+void SettingDialog::InitRetryCount()
+{
+	InitComboxListView(ui->retryCount, -1, { 0,1,2,3,4,5,6 });
+	ui->retryCount->setItemText(0, tr("DownloadUnlimitRetry") + tr("DefaultValue"));
+	int count = GlobalConfig::GetRetryCount();
+	ui->retryCount->blockSignals(true);
+	for (int i = 0; i < ui->retryCount->count(); ++i) {
+		if (count == ui->retryCount->itemData(i).toInt()) {
+			ui->retryCount->setCurrentIndex(i);
+			break;
+		}
+	}
+	ui->retryCount->blockSignals(false);
+}
+void SettingDialog::InitVideoOutput()
+{
+	InitComboxListView(ui->videoOutput, 
+		GlobalConfig::GetVideoOutput(), SdkManager::GetManager()->GetOutputItems());
+	auto values = SdkManager::GetManager()->GetOutputContexts();
+	SetComboxListView(ui->videoOutputContext);
+	for (auto& it : values) {
+		ui->videoOutputContext->addItem(it);
+	}
+	ui->videoOutputContext->setItemText(0, ui->videoOutputContext->itemText(0) + tr("DefaultValue"));
+	ui->videoOutputContext->setCurrentText(GlobalConfig::GetVideoOutputContext());
+}
+void SettingDialog::InitLogLevel()
+{
+	InitComboxListView(ui->logLevel,
+		GlobalConfig::GetLogLevel(), SdkManager::GetManager()->GetLogItems());
+	ui->logCallback->setChecked(GlobalConfig::IsLogCallback());
+}
+void SettingDialog::InitHttpRequest()
+{
+	InitComboxListView(ui->httpRequest, 
+		GlobalConfig::GetHttpRequest(), SdkManager::GetManager()->GetHttpItems());
+}
+void SettingDialog::InitPlayRate()
+{
+	InitComboxListView(ui->playRate,
+		GlobalConfig::GetPlayWithRate(), SdkManager::GetManager()->GetRateItems());
+}
+

@@ -5,7 +5,7 @@
 
 
 struct PlayerOSDConfig {
-	QString text;
+	QString text="polyv";
 	int textSize = 55;
 	QString textColor = "#FF000000";
 	int borderSize = 1;
@@ -19,8 +19,7 @@ struct PlayerOSDConfig {
 };
 
 struct PlayerLogoConfig {
-	QString text;
-	QString textFontName;
+	QString text="polyv";
 	int textSize = 16;
 	QString textColor = "#FF000000";
 	int borderSize = 1;
@@ -49,14 +48,14 @@ public:
 	static PlayerLogoConfig& GetLogoConfig();
 	static PlayerCacheConfig& GetCacheConfig();
 public:
-	int SetVideo(const QString& vid, const QString& path, int rate);
+	int SetInfo(const QString& vid, const QString& path, int rate);
 	int Reset();
 	void UpdateOSDConfig();
 	void UpdateLogoConfig();
 	void UpdateCacheConfig();
-	int Play(const QString& token, int seekMillisecond, bool sync);
-	int PlayLocal(int seekMillisecond);
-	int LoadLocal(int seekMillisecond);
+	int Play(const QString& token, int seekMillisecond, bool autoDownRate, bool playWithToken, bool sync);
+	int PlayLocal(int seekMillisecond, bool autoDownRate);
+	int LoadLocal(int seekMillisecond, bool autoDownRate);
 	int Pause(bool pause);
 	int Stop();
 	int SetMute(bool mute);
@@ -69,7 +68,7 @@ public:
 	int SetSpeed(double speed);
 	double GetSpeed();
 	int GetDuration();
-	int GetRateCount();
+	int GetCurrentRateCount();
 	int GetCurrentRate();
 	bool IsMute();
 	bool IsValid();
@@ -83,7 +82,7 @@ public:
 	int GetAudioDeviceInfo(int index, QString& deviceId, QString& deviceName);
 	int GetCurrentAudioDevice(QString& deviceId);
 	int SetCurrentAudioDevice(const QString& deviceId);
-	int ReloadAudio();
+	int ReloadAudioDevice();
 
 signals:
 	void SignalState(int state);
@@ -96,7 +95,7 @@ private slots:
 	void OnProgress(QString vid, int millisecond);
 	void OnProperty(QString vid, int property, int format, QString value);
 	void OnRateChange(QString vid, int inputBitRate, int realBitRate);
-    void OnAudioDeviceChange(QString vid, int audioDeviceCount);
+    void OnAudioDeviceChange(int audioDeviceCount);
 
 private:
 	PLVPlayerPtr player = nullptr;

@@ -11,6 +11,8 @@
 #include "AppDef.h"
 #include "VideoControl.h"
 
+#include "Player.h"
+
 
 class VolumeControl;
 class SliderControl;
@@ -117,7 +119,7 @@ protected:
 	void paintEvent(QPaintEvent* e) override;
 	void closeEvent(QCloseEvent* e) override;
 private:
-	bool SetVideo(bool local, int rate, const SharedVideoPtr& video);
+	bool SetInfo(bool local, int rate, const SharedVideoPtr& video);
 	bool StartPlay(bool local, int rate, const QString& token, const SharedVideoPtr& video, int seekMillisecond);
 
 	//void SetPanelVisible(bool visible);

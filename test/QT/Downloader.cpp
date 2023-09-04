@@ -1,7 +1,7 @@
 #include "Downloader.h"
 
 Downloader::Downloader(QObject* parent/* = nullptr*/)
-	: QObject(parent)
+	: QObject(parent) 
 {
 	downloader = PLVDownloadCreate();
 	PLVDownloadSetErrorHandler(downloader, [](const char* vid, int code, void* data) {
@@ -29,9 +29,9 @@ Downloader::~Downloader(void)
 	downloader = nullptr;
 }
 
-int Downloader::SetVideo(const QString& vid, const QString& path, int rate)
+int Downloader::SetInfo(const QString& vid, const QString& path, int rate)
 {
-	return PLVDownloadSetVideo(downloader, vid.toStdString().c_str(), path.toStdString().c_str(), rate);
+	return PLVDownloadSetInfo(downloader, vid.toStdString().c_str(), path.toStdString().c_str(), rate);
 }
 int Downloader::Reset()
 {
@@ -41,9 +41,9 @@ int Downloader::Start(bool autoDownRate)
 {
 	return PLVDownloadStart(downloader, autoDownRate);
 }
-int Downloader::Pause()
+int Downloader::Pause(bool pause)
 {
-	return PLVDownloadPause(downloader);
+	return PLVDownloadPause(downloader, pause);
 }
 int Downloader::Stop()
 {

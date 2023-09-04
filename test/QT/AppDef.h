@@ -10,9 +10,9 @@
 #define APP_TOKEN_URL "hls.videocc.net/service/v1/token"
 
 
-//const int kVideoSD = 0;
-//const int kVideoHD = 1;
-//const int kVideoBD = 2;
+//const int kVideoLD = 0;
+//const int kVideoSD = 1;
+//const int kVideoHD = 2;
 //const int kVideoAuto = 3;
 
 
