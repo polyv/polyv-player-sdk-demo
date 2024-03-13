@@ -72,6 +72,7 @@ elseif (APPLE)
     #append_brew_pkg_path_to_env(openssl@1.1)
 endif()
 
+
 #demo
 option(PLV_PLAYER_SDK_INSIDE  "define library inside" OFF)
 add_subdirectory(test/simple)
