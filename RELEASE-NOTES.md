@@ -2,6 +2,70 @@
 
 SDK 的版本变更说明
 
+## Version 2.6.0
+
+新特性
+1. C++接口支持自定义播放seed，仅针对VRM12|VRM13的在线播放
+2. C++接口新增：PLVPlayerSetAudioPlayErrorHandler,用于音频播放失败时回调通知
+3. Electron新增：回调事件PlayerAudioPlayError,用于音频播放失败时回调通知
+
+变更与修复
+1. C++接口标记为过时
+    1. PLVAccountInfo中的secretKey与appSecret不建议传入SDK
+    2. PLVSetSdkHttpRequest 不建议调用
+    3. PLVRequestVideoInfo 建议在服务器上请求视频信息
+    4. PLVCancelRequestVideoInfo 建议在服务器上请求视频信息
+    5. PLVPlayerReloadAudioDevice 暂无需调用
+2. C++接口参数变更
+    1. PLVDownloadStart时，加密视频必须提供token
+3. Electron以下接口被移除
+    1. setSdkHttpRequest sdk内部始终以https方式请求
+    2. requestVideoInfo 建议在服务器上请求视频信息
+    3. cancelRequestVideoInfo 建议在服务器上请求视频信息
+    4. playerReloadAudioDevice 暂无需主动重载
+4. Electron以下接口参数变更
+    1. initSdkLibrary中，不再处理secretKey与appSecret参数,不要再传入
+    2. downloadStart中，加密视频必须提供token
+5. 音频变更:WIN32下不再尝试使用openal播放音频
+6. 修复MAC上结束播放后重新开启播放有一定概率死锁的问题
+
+## Version 2.5.3
+变更与修复
+1. 修复未释放JS事件相关的问题
+
+## Version 2.5.2
+变更与修复
+1. 修复Windows下播放时，音频反复禁用与启用可能导致崩溃的问题
+2. 修复Windows-Electron下，硬件防录制无回调通知的问题
+3. VRM12、13水印样式优化
+
+## Version 2.5.1
+变更与修复
+1. 使用2.3.1及以下版本下载的离线加密视频，经过2.4.0及以上版本迁移概率性失败的问题
+2. MAC下主动停止播放未发生停止回调
+3. VRM12|13会自带视频水印，无法使用接口去除
+4. Electron-SDK下硬件防录制回调类型错误的问题
+5. Electron-SDK清晰度切换不准确问题
+
+## Version 2.5.0
+
+接口变更
+1. PLVInitSdkLibrary：增加子账户设置
+2. PLVSetSdkLocalRememberPlay：本地续播接口
+3. PLVVideoRequestInfo：视频信息部分字段改为64位
+
+新特性
+1. 支持ECDN在线播放
+2. 支持跨端续播
+3. 支持使用子账户
+4. 支持Electron调用
+
+变更与修复
+1. 文件大小显示不准确
+2. M1上全屏播放有一定概率崩溃
+3. Windows上使用WASAPI播放音频失败时尝试使用SDL
+4. VRM13会自带视频水印，无法使用接口去除
+
 ## Version 2.4.0
 
 ### 迁移说明
@@ -67,7 +131,7 @@ SDK 的版本变更说明
 * 【优化】指定VIDEO_RATE_AUTO时，使用videojson里默认清晰度，不存在时逐级切换，而不是直接使用最低清晰度播放；
 * 【优化】当视频为源文件时，下载会判断是否MP4文件，如果是则下载，并且文件指定清晰度为LD，为m3u8时返回E_NO_SUPPORT；
 * 【优化】优化下载解压失败时处理逻辑，3次解压失败时会删除视频重新下载解压；
-  
+
 ## Version 2.3.1
 
 修复问题：

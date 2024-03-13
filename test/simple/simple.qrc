@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>data/locale/zh-CN.ini</file>
+    </qresource>
+</RCC>

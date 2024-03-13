@@ -60,7 +60,7 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
 ## C++ Demo 使用 CMake 构建
 
-* 推荐使用 Visual Studio 2019 开发，本 Demo 使用 Visual Studio 2019 开发。
+* 推荐使用 Visual Studio 2022 开发，本 Demo 使用 Visual Studio 2022 开发。
 
 ### CMake GUI
 
@@ -68,7 +68,7 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
  > ![cmake_build.png](https://help.polyv.net/img/vod/pc_player/CMAKE.png)
 
-* 设置 QTDIR，指定 QT 路径。（如：C:\Qt\Qt5.12.5\5.12.5\msvc2017）
+* 设置 QTDIR，指定 QT 路径。（如：C:\Qt\Qt5.15.2\5.15.2\msvc2019）
   
  > ![QTDIR.png](https://help.polyv.net/img/vod/pc_player/QTDIR.png)
 
@@ -81,7 +81,7 @@ cd build
 # 以下指令请根据平台选择执行
 # Demo工程使用了QT库, 须指定QTDIR
 # build in Windows
-cmake .. -G "Visual Studio 16 2019" -A x64 -DQTDIR=C:\Qt\5.15.2\msvc2019_64
+cmake .. -G "Visual Studio 17 2022" -A x64 -DQTDIR=C:\Qt\5.15.2\msvc2019_64
 
 # build in Macos
 cmake -S .. -B . -G "Xcode" -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.15 -DQTDIR:PATH=/Users/polyv/Qt/5.15.2/clang_64
@@ -91,7 +91,7 @@ cmake -S .. -B . -G "Xcode" -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING=10.15 -DQTDIR:
 ## C# Demo 使用 Visual Studio 打开
 
 1. C# Demo 只支持 Windows。
-2. 推荐使用 Visual Studio 2019 开发。
+2. 推荐使用 Visual Studio 2022 开发。
 3. test/C# 直接打开 polyv-player-demo-csharp.sln。
 
 ## 接口文档

@@ -1,0 +1,1879 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1209</width>
+    <height>968</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Demo</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="2" column="1">
+     <widget class="QCheckBox" name="autoScrollCheckBox">
+      <property name="text">
+       <string>AutoScroll</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+      <property name="tristate">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1" colspan="2">
+     <widget class="QPlainTextEdit" name="msgPlainTextEdit">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>300</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>300</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="readOnly">
+       <bool>false</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0" rowspan="3">
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>BaseInfo</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <property name="leftMargin">
+         <number>2</number>
+        </property>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="title">
+           <string>VideoInfoList</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0" colspan="7">
+            <widget class="QTableWidget" name="videoTableWidget">
+             <property name="editTriggers">
+              <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+             </property>
+             <column>
+              <property name="text">
+               <string>Name</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Type</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>VID</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Status</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Size</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Duration</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Rates</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+           <item row="1" column="5">
+            <widget class="QLabel" name="pageLabel">
+             <property name="text">
+              <string>0/0</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="6">
+            <widget class="QLabel" name="label_19">
+             <property name="text">
+              <string>Page</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="requestVideoListLabel">
+             <property name="text">
+              <string>RequestList</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QSpinBox" name="pageSpinBox">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>100000</number>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="label_20">
+             <property name="text">
+              <string>页</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_21">
+             <property name="text">
+              <string>SearchList</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="5">
+            <widget class="QPushButton" name="searchPushButton">
+             <property name="text">
+              <string>Search</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1" colspan="4">
+            <widget class="QLineEdit" name="vidsearchLineEdit">
+             <property name="placeholderText">
+              <string>SearchTips</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="5">
+            <widget class="QPushButton" name="requestPushButton">
+             <property name="text">
+              <string>Request</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="6" rowspan="2">
+            <widget class="QPushButton" name="cancelPushButton">
+             <property name="text">
+              <string>Cancel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="5">
+            <widget class="QLabel" name="label_38">
+             <property name="text">
+              <string>RightClickPlayTips</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="groupBox">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>310</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>310</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>GlobalInfoSettings</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <property name="horizontalSpacing">
+            <number>7</number>
+           </property>
+           <item row="2" column="1" colspan="3">
+            <widget class="QCheckBox" name="logCallbackCheckBox">
+             <property name="text">
+              <string>Open</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="7">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>Name：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>LogLevel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="10">
+            <widget class="QLabel" name="label_16">
+             <property name="text">
+              <string>ms</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="3" colspan="4">
+            <widget class="QLineEdit" name="appIdLineEdit">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>DownloadPolicy</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="8" colspan="4">
+            <widget class="QLineEdit" name="viewerNameLineEdit"/>
+           </item>
+           <item row="6" column="3" colspan="4">
+            <widget class="QLineEdit" name="viewerIdLineEdit"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_46">
+             <property name="text">
+              <string>PlaySeed</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="12" colspan="2">
+            <widget class="QLineEdit" name="retryMaxSpaceLineEdit"/>
+           </item>
+           <item row="6" column="2">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Id：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="12">
+            <widget class="QCheckBox" name="subAccountCheckBox">
+             <property name="text">
+              <string>SubAccount</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2" colspan="5">
+            <widget class="QLineEdit" name="playSeedLineEdit">
+             <property name="echoMode">
+              <enum>QLineEdit::Password</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1" colspan="3">
+            <widget class="QComboBox" name="logLevelComboBox">
+             <property name="currentText">
+              <string>INFO</string>
+             </property>
+             <property name="currentIndex">
+              <number>2</number>
+             </property>
+             <item>
+              <property name="text">
+               <string>OFF</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>DEBUG</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>INFO</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>WARN</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>ERROR</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>FATAL</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="13">
+            <widget class="QLineEdit" name="logPathLineEdit"/>
+           </item>
+           <item row="8" column="7">
+            <widget class="QLabel" name="label_44">
+             <property name="text">
+              <string>appSecret：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="0" colspan="12">
+            <widget class="QLabel" name="label_45">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 0);</string>
+             </property>
+             <property name="text">
+              <string>AccountTips</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="14">
+            <widget class="QLabel" name="label_17">
+             <property name="text">
+              <string>ms</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0" colspan="2">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>UserViewerInfo</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_49">
+             <property name="text">
+              <string>LocalRemember</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="2">
+            <widget class="QLabel" name="label_14">
+             <property name="text">
+              <string>userId：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="7" colspan="5">
+            <widget class="QLabel" name="label_47">
+             <property name="text">
+              <string>PlaySeedTips</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="7">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>secretKey：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2" colspan="2">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>RetryAttempts</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="2">
+            <widget class="QLabel" name="label_43">
+             <property name="text">
+              <string>appId：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="11">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>RetryMaxSpace</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0" colspan="2">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string>AccountInfo</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="13">
+            <widget class="QPushButton" name="freePushButton">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Free</string>
+             </property>
+            </widget>
+           </item>
+           <item row="9" column="12">
+            <widget class="QPushButton" name="initPushButton">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Init</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>LogCallback</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="3" colspan="4">
+            <widget class="QLineEdit" name="userIdLineEdit"/>
+           </item>
+           <item row="3" column="7">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>RetryMinSpace</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="2">
+            <widget class="QCheckBox" name="localRememberFrameCheckBox">
+             <property name="text">
+              <string>Open</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="8" colspan="4">
+            <widget class="QLineEdit" name="appSecretLineEdit">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="8" colspan="4">
+            <widget class="QLineEdit" name="secretKeyLineEdit">
+             <property name="echoMode">
+              <enum>QLineEdit::Password</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>LogPath</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="8" colspan="2">
+            <widget class="QLineEdit" name="retryMinSpaceLineEdit"/>
+           </item>
+           <item row="3" column="5" colspan="2">
+            <widget class="QLineEdit" name="retryAttemptsLineEdit"/>
+           </item>
+           <item row="5" column="3" colspan="9">
+            <widget class="QLabel" name="label_50">
+             <property name="text">
+              <string>LocalRememberTips</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_3">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>DetectRecordSettings</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QCheckBox" name="detectSoftwareRecordCheckBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>DetectSoftwareRecord</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="detectHardwareRecordCheckBox">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>DetectHardwareRecord</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <attribute name="title">
+        <string>VideoPlay</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <property name="leftMargin">
+         <number>2</number>
+        </property>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item row="1" column="0" colspan="2">
+         <widget class="QGroupBox" name="playControlGroupBox">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>210</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>PlayControl</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <property name="spacing">
+            <number>2</number>
+           </property>
+           <property name="leftMargin">
+            <number>2</number>
+           </property>
+           <property name="topMargin">
+            <number>2</number>
+           </property>
+           <property name="rightMargin">
+            <number>2</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="widget_6" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_7">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_40">
+                <property name="text">
+                 <string>PlayMode</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="playModeComboBox">
+                <item>
+                 <property name="text">
+                  <string>PlayOnline</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>PlayLocal</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_37">
+                <property name="text">
+                 <string>VID</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="playVidLineEdit"/>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="tokenCheckBox">
+                <property name="text">
+                 <string>Token</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <property name="tristate">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="playTokenLineEdit"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="tokenRequestPushButton">
+                <property name="text">
+                 <string>Request</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="autoDownRateCheckBox">
+                <property name="text">
+                 <string>AutoDownRate</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="playRateComboBox">
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>LD</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>SD</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>HD</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Source</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_5" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_6">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_39">
+                <property name="text">
+                 <string>VideoPath</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="videoPathLineEdit">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="browsePushButton">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_4" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="SimplePlayProcess" name="progressWidget" native="true">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>10</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>10</height>
+                 </size>
+                </property>
+                <property name="cursor">
+                 <cursorShape>PointingHandCursor</cursorShape>
+                </property>
+                <property name="mouseTracking">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="playTimeLabel">
+                <property name="maximumSize">
+                 <size>
+                  <width>150</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>00:00:00/00:00:00</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_3" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="playStatusLabel">
+                <property name="frameShape">
+                 <enum>QFrame::NoFrame</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QLabel" name="playInfoLabel">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>30</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::NoFrame</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_2" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QPushButton" name="playPushButton">
+                <property name="text">
+                 <string>Play</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pausePushButton">
+                <property name="text">
+                 <string>Pause</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="resumePushButton">
+                <property name="text">
+                 <string>Resume</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="stopPushButton">
+                <property name="text">
+                 <string>Stop</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="shotScreenPushButton">
+                <property name="text">
+                 <string>ShotScreen</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="fullScreenPushButton">
+                <property name="toolTip">
+                 <string>FullScreenTips</string>
+                </property>
+                <property name="text">
+                 <string>FullScreen</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="speedComboBox">
+                <property name="currentIndex">
+                 <number>1</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>0.5x</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>1.0x</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>1.2x</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>1.5x</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>2.0x</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="muteCheckBox">
+                <property name="text">
+                 <string>Mute</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSlider" name="volumeHorizontalSlider">
+                <property name="maximumSize">
+                 <size>
+                  <width>100</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="volumeLabel">
+                <property name="text">
+                 <string>100</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_2">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_2">
+              <property name="spacing">
+               <number>2</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QCheckBox" name="hardwareDecodeCheckBox">
+                <property name="text">
+                 <string>HardwareDecode</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="keepLastFrameCheckBox">
+                <property name="text">
+                 <string>KeepLastFrame</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_2">
+                <property name="text">
+                 <string>VideoOutput</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="videoOutputComboBox">
+                <item>
+                 <property name="text">
+                  <string>Default</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>GPU</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>D3D9-WIN</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>GDI-WIN</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QLabel" name="playLabel">
+          <property name="toolTip">
+           <string>FullScreenTips</string>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: lightgray;</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QGroupBox" name="osdGroupBox">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>180</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>OSD</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_7">
+           <property name="leftMargin">
+            <number>2</number>
+           </property>
+           <property name="topMargin">
+            <number>2</number>
+           </property>
+           <property name="rightMargin">
+            <number>2</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <property name="horizontalSpacing">
+            <number>4</number>
+           </property>
+           <property name="verticalSpacing">
+            <number>2</number>
+           </property>
+           <item row="4" column="2">
+            <widget class="QLabel" name="label_36">
+             <property name="text">
+              <string>DisplayFade</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QLabel" name="label_35">
+             <property name="text">
+              <string>DisplaySpace</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_32">
+             <property name="text">
+              <string>TextColor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_28">
+             <property name="text">
+              <string>TextSize</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QComboBox" name="osdEffectComboBox">
+             <item>
+              <property name="text">
+               <string>RightToLeft</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>RandomBlink</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QSpinBox" name="osdDurationSpinBox"/>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLineEdit" name="osdBorderColorLineEdit"/>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="osdTextLineEdit"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="osdEnableCheckBox">
+             <property name="text">
+              <string>Enable</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLineEdit" name="osdBorderSizeLineEdit"/>
+           </item>
+           <item row="3" column="3">
+            <widget class="QSpinBox" name="osdSpaceSpinBox"/>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_30">
+             <property name="text">
+              <string>BorderColor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="label_34">
+             <property name="text">
+              <string>DisplayDuration</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="osdTextColorLineEdit"/>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="label_33">
+             <property name="text">
+              <string>Effect</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_31">
+             <property name="text">
+              <string>Text</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_29">
+             <property name="text">
+              <string>BorderSize</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="osdTextSizeLineEdit"/>
+           </item>
+           <item row="4" column="3">
+            <widget class="QSpinBox" name="osdFadeSpinBox"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="logoGroupBox">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>180</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>LOGO</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <property name="leftMargin">
+            <number>2</number>
+           </property>
+           <property name="topMargin">
+            <number>2</number>
+           </property>
+           <property name="rightMargin">
+            <number>2</number>
+           </property>
+           <property name="bottomMargin">
+            <number>2</number>
+           </property>
+           <property name="horizontalSpacing">
+            <number>4</number>
+           </property>
+           <property name="verticalSpacing">
+            <number>2</number>
+           </property>
+           <item row="0" column="0" colspan="2">
+            <widget class="QCheckBox" name="logoEnableCheckBox">
+             <property name="text">
+              <string>Enable</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_18">
+             <property name="text">
+              <string>Text</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="logoTextLineEdit"/>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="label_26">
+             <property name="text">
+              <string>HPos</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QComboBox" name="logoHPosComboBox">
+             <item>
+              <property name="text">
+               <string>Left</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Middle</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Right</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_22">
+             <property name="text">
+              <string>TextSize</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="logoTextSizeLineEdit"/>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="label_27">
+             <property name="text">
+              <string>VPos</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QComboBox" name="logoVPosComboBox">
+             <item>
+              <property name="text">
+               <string>Top</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Middle</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Bottom</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_23">
+             <property name="text">
+              <string>TextColor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="logoTextColorLineEdit"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_24">
+             <property name="text">
+              <string>BorderSize</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QLineEdit" name="logoBorderSizeLineEdit"/>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_25">
+             <property name="text">
+              <string>BorderColor</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QLineEdit" name="logoBorderColorLineEdit"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="3" column="1" alignment="Qt::AlignRight">
+         <widget class="QPushButton" name="shrinkOrExpandPushButton">
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Shrink</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>DownloadVideo</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_8">
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="groupBox_4">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>400</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>DownloadVideoList</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="localVideoPathLineEdit"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="localVideoBrowserPushButton">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_41">
+             <property name="text">
+              <string>VideoSavePath</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="3">
+            <widget class="QTableWidget" name="downloadVideoTableWidget">
+             <column>
+              <property name="text">
+               <string>DownloadDetail</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>DownloadProgress</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>DownloadOperation</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="title">
+           <string>LocalVideoList</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_10">
+           <item row="0" column="0">
+            <widget class="QTableWidget" name="localVideoTableWidget">
+             <column>
+              <property name="text">
+               <string>VID</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>DownloadOperation</string>
+              </property>
+             </column>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_4">
+       <attribute name="title">
+        <string>CustomRender</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_11">
+        <property name="leftMargin">
+         <number>2</number>
+        </property>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="PlayImage" name="playOpenGLWidget"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>100</height>
+           </size>
+          </property>
+          <property name="title">
+           <string>PlayControl</string>
+          </property>
+          <widget class="QCheckBox" name="customTokenCheckBox">
+           <property name="geometry">
+            <rect>
+             <x>300</x>
+             <y>22</y>
+             <width>67</width>
+             <height>19</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Token</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
+           </property>
+          </widget>
+          <widget class="QLineEdit" name="customPlayVidLineEdit">
+           <property name="geometry">
+            <rect>
+             <x>45</x>
+             <y>20</y>
+             <width>231</width>
+             <height>24</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="customPlayPushButton">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>60</y>
+             <width>93</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Play</string>
+           </property>
+          </widget>
+          <widget class="QComboBox" name="customSpeedComboBox">
+           <property name="geometry">
+            <rect>
+             <x>240</x>
+             <y>60</y>
+             <width>91</width>
+             <height>21</height>
+            </rect>
+           </property>
+           <property name="currentIndex">
+            <number>1</number>
+           </property>
+           <item>
+            <property name="text">
+             <string>0.5x</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>1.0x</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>1.2x</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>1.5x</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>2.0x</string>
+            </property>
+           </item>
+          </widget>
+          <widget class="QLabel" name="label_42">
+           <property name="geometry">
+            <rect>
+             <x>19</x>
+             <y>18</y>
+             <width>24</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>VID</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="customStopPushButton">
+           <property name="geometry">
+            <rect>
+             <x>130</x>
+             <y>60</y>
+             <width>93</width>
+             <height>28</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Stop</string>
+           </property>
+          </widget>
+          <widget class="QComboBox" name="customPlayRateComboBox">
+           <property name="geometry">
+            <rect>
+             <x>380</x>
+             <y>20</y>
+             <width>78</width>
+             <height>21</height>
+            </rect>
+           </property>
+           <item>
+            <property name="text">
+             <string>Auto</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>LD</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>SD</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>HD</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Source</string>
+            </property>
+           </item>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="0" column="1" colspan="2">
+     <widget class="QWidget" name="widget_7" native="true">
+      <property name="minimumSize">
+       <size>
+        <width>300</width>
+        <height>20</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>300</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <property name="spacing">
+        <number>2</number>
+       </property>
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Message</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="msgSearchLineEdit"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="msgSearchPushButton">
+         <property name="text">
+          <string>Search</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="2" column="2">
+     <widget class="QLabel" name="label_48">
+      <property name="toolTip">
+       <string>MessageTipsContent</string>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color: rgb(170, 0, 0);</string>
+      </property>
+      <property name="text">
+       <string>MessageTips</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>SimplePlayProcess</class>
+   <extends>QWidget</extends>
+   <header>util.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PlayImage</class>
+   <extends>QOpenGLWidget</extends>
+   <header>playimage.h</header>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>viewerIdLineEdit</tabstop>
+  <tabstop>viewerNameLineEdit</tabstop>
+  <tabstop>userIdLineEdit</tabstop>
+  <tabstop>secretKeyLineEdit</tabstop>
+  <tabstop>appIdLineEdit</tabstop>
+  <tabstop>appSecretLineEdit</tabstop>
+  <tabstop>initPushButton</tabstop>
+  <tabstop>freePushButton</tabstop>
+  <tabstop>requestPushButton</tabstop>
+  <tabstop>searchPushButton</tabstop>
+  <tabstop>cancelPushButton</tabstop>
+  <tabstop>logLevelComboBox</tabstop>
+  <tabstop>retryMaxSpaceLineEdit</tabstop>
+  <tabstop>logPathLineEdit</tabstop>
+  <tabstop>retryMinSpaceLineEdit</tabstop>
+  <tabstop>logCallbackCheckBox</tabstop>
+  <tabstop>vidsearchLineEdit</tabstop>
+  <tabstop>autoScrollCheckBox</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>msgPlainTextEdit</tabstop>
+  <tabstop>subAccountCheckBox</tabstop>
+  <tabstop>videoTableWidget</tabstop>
+  <tabstop>detectSoftwareRecordCheckBox</tabstop>
+  <tabstop>detectHardwareRecordCheckBox</tabstop>
+  <tabstop>playModeComboBox</tabstop>
+  <tabstop>playVidLineEdit</tabstop>
+  <tabstop>tokenCheckBox</tabstop>
+  <tabstop>playTokenLineEdit</tabstop>
+  <tabstop>tokenRequestPushButton</tabstop>
+  <tabstop>autoDownRateCheckBox</tabstop>
+  <tabstop>playRateComboBox</tabstop>
+  <tabstop>videoPathLineEdit</tabstop>
+  <tabstop>browsePushButton</tabstop>
+  <tabstop>playPushButton</tabstop>
+  <tabstop>pausePushButton</tabstop>
+  <tabstop>resumePushButton</tabstop>
+  <tabstop>stopPushButton</tabstop>
+  <tabstop>shotScreenPushButton</tabstop>
+  <tabstop>fullScreenPushButton</tabstop>
+  <tabstop>speedComboBox</tabstop>
+  <tabstop>muteCheckBox</tabstop>
+  <tabstop>volumeHorizontalSlider</tabstop>
+  <tabstop>hardwareDecodeCheckBox</tabstop>
+  <tabstop>keepLastFrameCheckBox</tabstop>
+  <tabstop>videoOutputComboBox</tabstop>
+  <tabstop>osdEffectComboBox</tabstop>
+  <tabstop>osdDurationSpinBox</tabstop>
+  <tabstop>osdBorderColorLineEdit</tabstop>
+  <tabstop>osdTextLineEdit</tabstop>
+  <tabstop>osdEnableCheckBox</tabstop>
+  <tabstop>osdBorderSizeLineEdit</tabstop>
+  <tabstop>osdSpaceSpinBox</tabstop>
+  <tabstop>osdTextColorLineEdit</tabstop>
+  <tabstop>osdTextSizeLineEdit</tabstop>
+  <tabstop>osdFadeSpinBox</tabstop>
+  <tabstop>logoEnableCheckBox</tabstop>
+  <tabstop>logoTextLineEdit</tabstop>
+  <tabstop>logoHPosComboBox</tabstop>
+  <tabstop>logoTextSizeLineEdit</tabstop>
+  <tabstop>logoVPosComboBox</tabstop>
+  <tabstop>logoTextColorLineEdit</tabstop>
+  <tabstop>logoBorderSizeLineEdit</tabstop>
+  <tabstop>logoBorderColorLineEdit</tabstop>
+  <tabstop>shrinkOrExpandPushButton</tabstop>
+  <tabstop>localVideoPathLineEdit</tabstop>
+  <tabstop>localVideoBrowserPushButton</tabstop>
+  <tabstop>downloadVideoTableWidget</tabstop>
+  <tabstop>localVideoTableWidget</tabstop>
+  <tabstop>customTokenCheckBox</tabstop>
+  <tabstop>customPlayVidLineEdit</tabstop>
+  <tabstop>customPlayPushButton</tabstop>
+  <tabstop>customSpeedComboBox</tabstop>
+  <tabstop>customStopPushButton</tabstop>
+  <tabstop>customPlayRateComboBox</tabstop>
+  <tabstop>msgSearchLineEdit</tabstop>
+  <tabstop>msgSearchPushButton</tabstop>
+  <tabstop>pageSpinBox</tabstop>
+  <tabstop>retryAttemptsLineEdit</tabstop>
+  <tabstop>playSeedLineEdit</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

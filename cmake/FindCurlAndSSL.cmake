@@ -1,10 +1,10 @@
+if(NOT DEFINED THIRD_PARTY_PATH)
+    message(FATAL_ERROR "Not defined THIRD_PARTY_PATH")
+endif()
 if (MSVC)
-    if(NOT DEFINED THIRD_PARTY_PATH)
-        message(FATAL_ERROR "Not defined THIRD_PARTY_PATH")
-    endif()
     set(WLIB_TARGET "x86")
 	if (CMAKE_CL_64)
-	set(WLIB_TARGET "x64")
+	    set(WLIB_TARGET "x64")
 	endif() 
     set(CRYPTO_LIBS
         ${THIRD_PARTY_PATH}/${WLIB_TARGET}-windows/lib/libcrypto.lib

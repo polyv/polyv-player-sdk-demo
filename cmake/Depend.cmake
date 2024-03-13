@@ -17,7 +17,7 @@ endif()
 
 ExternalProject_Add(
     Depend
-    URL ${DOWNLOAD_DEPEND_URL}  
+    URL ${DOWNLOAD_DEPEND_URL}
     #DOWNLOAD_NAME PCPlayerSDK-Win-x86.7z
     DOWNLOAD_DIR ${SOURCE_LOCATION}
     SOURCE_DIR ${THIRD_PARTY_DIR}

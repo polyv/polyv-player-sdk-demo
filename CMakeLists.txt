@@ -1,33 +1,35 @@
 cmake_minimum_required(VERSION 3.19)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-set(PLV_PLAYER_SDK_VERSION "2.4.0")
 cmake_policy(SET CMP0048 NEW)
-project(polyv-player-sdk-demo VERSION ${PLV_PLAYER_SDK_VERSION})
-
-set(THIRD_PARTY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
-message(STATUS "THE PROJECT NAME: " ${PROJECT_NAME})
-message(STATUS "THE PROJECT VERSION: " ${PROJECT_VERSION})
-
-option(PLV_PLAYER_SDK_INSIDE  "define library inside" OFF)
-
+if (WIN32)
+  set(CMAKE_SYSTEM_VERSION 10.0.22000.0) # 10.0.20348.0)
+endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(THIRD_PARTY_PATH ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
+
+set(PLV_PLAYER_SDK_VERSION "2.6.0")
+file(WRITE ${CMAKE_BINARY_DIR}/VERSION ${PLV_PLAYER_SDK_VERSION})
+project(polyv-player-sdk VERSION ${PLV_PLAYER_SDK_VERSION})
+message(STATUS "THE PROJECT NAME: " ${PROJECT_NAME})
+message(STATUS "THE PROJECT VERSION: " ${PROJECT_VERSION})
 
 if(MSVC)
+	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
+		set(WLIB_TARGET "x86")
+	else()
+		set(WLIB_TARGET "x64")
+	endif()
+	set(SDK_RELATIVE_PATH "windows/${WLIB_TARGET}")
     add_compile_options(/MP)
     add_compile_definitions(UNICODE _UNICODE _CRT_NONSTDC_NO_WARNINGS _CRT_SECURE_NO_WARNINGS)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D_DEBUG=1")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG=1")
-elseif (APPLE)
-    # list(APPEND COMPILER_FLAGS "-fno-exceptions" "-fPIC" "-fno-rtti") # todo: confirm
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG=1")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG=1")
-endif()
-
-if(MSVC)
+    #use MT
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     # TODO: check
     # generate pdb
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
@@ -37,26 +39,9 @@ if(MSVC)
     set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG")
     set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /DEBUG")
     set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /DEBUG")
-endif()
+	configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ALL_BUILD.vcxproj.user.in"
+		"${CMAKE_BINARY_DIR}/ALL_BUILD.vcxproj.user")
 
-if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
-endif()
-
-if (WIN32)
-elseif(APPLE)
-    include(Helpers)
-endif()
-add_subdirectory(deps)
-
-configure_file("${CMAKE_SOURCE_DIR}/cmake/ALL_BUILD.vcxproj.user.in"
- "${CMAKE_BINARY_DIR}/ALL_BUILD.vcxproj.user")
-
-set(PLAYER_SDK_PATH ${CMAKE_CURRENT_SOURCE_DIR}/plv-player-sdk)
-add_subdirectory(test/QT)
-
-
-if(WIN32)
     string(REGEX REPLACE
         ".*/VC/Tools/MSVC/([0-9\\.]+)/bin/.*" "\\1"
         MSVC_TOOL_VERSION "${CMAKE_AR}")
@@ -73,6 +58,20 @@ if(WIN32)
         "MSVC_TOOLSET_VERSION=${MSVC_TOOLSET_VERSION}\n"
         "MSVC_VERSION=${MSVC_VERSION}\n"
         "WINDOWS_SDK_VERSION=${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}\n"
-        )
+    )
+elseif (APPLE)
+	set(SDK_RELATIVE_PATH "mac")
+	include(Helpers)
+    # list(APPEND COMPILER_FLAGS "-fno-exceptions" "-fPIC" "-fno-rtti") # todo: confirm
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG=1")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG=1")
+
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15)
+
+    #append_brew_pkg_path_to_env(curl)
+    #append_brew_pkg_path_to_env(openssl@1.1)
 endif()
 
+#demo
+option(PLV_PLAYER_SDK_INSIDE  "define library inside" OFF)
+add_subdirectory(test/simple)

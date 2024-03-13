@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Runtime.InteropServices;
 using System.IO;
+using static polyv_player_demo_csharp.PlvPlayerSDK;
 
 namespace polyv_player_demo_csharp
 {
@@ -36,8 +37,11 @@ namespace polyv_player_demo_csharp
         PlvPlayerSDK.OnDownloadProgressHandler downloadProgressHandler = null;
         PlvPlayerSDK.OnDownloadResultHandler downloadResultHandler = null;
         IntPtr downloader = IntPtr.Zero;
-        //player
-        PlvPlayerSDK.OnPlayerStateHandler playStateHandler = null;
+		//player
+		IntPtr renderBuffer = Marshal.AllocHGlobal(1920 * 1088 * 4);
+		PlvPlayerSDK.OnPlayerVideoFrameHandler playFrameLockHandler = null;
+		PlvPlayerSDK.OnPlayerVideoFrameHandler playFrameUnlockHandler = null;
+		PlvPlayerSDK.OnPlayerStateHandler playStateHandler = null;
         PlvPlayerSDK.OnPlayerPropertyHandler playPropertyHandler = null;
         PlvPlayerSDK.OnPlayerRateChangeHandler playRateChangeHandler = null;
         PlvPlayerSDK.OnPlayerProgressHandler playProgressHandler = null;
@@ -75,12 +79,13 @@ namespace polyv_player_demo_csharp
             appLog.Debug("the sdk version:" + version);
             int ret = PlvPlayerSDK.PLVSetSdkLogFile(ConvertUtf8(logPath + "\\测试\\" + DateTime.Now.ToString("yyyy-MM-dd hh-mm-ss") + ".log"));
             ret = PlvPlayerSDK.PLVSetSdkLogLevel(PlvPlayerSDK.LOG_FILTER_TYPE.LOG_FILTER_DEBUG);
-            ret = PlvPlayerSDK.PLVSetSdkHttpRequest(PlvPlayerSDK.SDK_HTTP_REQUEST.FIRST_HTTPS_REQUEST);
-            /* 设置解码类型，全局有效
+            ret = PlvPlayerSDK.PLVSetSdkHttpRequest(PlvPlayerSDK.SDK_HTTP_REQUEST.ONLY_HTTPS_REQUEST);
+			ret = PlvPlayerSDK.PLVSetSdkCacertFile(@".\..\..\..\..\..\..\plv-player-sdk\windows\x64\lib\cacert.pem");
+			/* 设置解码类型，全局有效
              * 注意：一般建议您使用软解码！可以大大降低解码花屏出错的概率！
              *      建议仅当CPU性能不足或GPU驱动等测试正常时，使用硬解码！
              */
-            ret = PlvPlayerSDK.PLVSetSdkHwdecEnable(false);
+			ret = PlvPlayerSDK.PLVSetSdkHwdecEnable(false);
         }
 
         private void WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -93,7 +98,8 @@ namespace polyv_player_demo_csharp
                     if (player != IntPtr.Zero)
                     {
                         PlvPlayerSDK.PLVPlayerDestroy(player);
-                    }
+						Marshal.FreeHGlobal(renderBuffer);
+					}
                     if (downloader != IntPtr.Zero)
                     {
                         PlvPlayerSDK.PLVDownloadDestroy(downloader);
@@ -112,7 +118,7 @@ namespace polyv_player_demo_csharp
 
         private void OnGetVideoList(object sender, RoutedEventArgs e)
         {
-            if (userIdTextBox.Text == String.Empty || secretKeyTextBox.Text == String.Empty || readTokenTextBox.Text == String.Empty)
+            if (userIdTextBox.Text == String.Empty || secretKeyTextBox.Text == String.Empty)
             {
                 MessageBox.Show("用户信息值不可空！");
                 return;
@@ -142,8 +148,14 @@ namespace polyv_player_demo_csharp
 
             try
             {
-                //init sdk info
-                int ret = PlvPlayerSDK.PLVInitSdkLibrary(userIdTextBox.Text, secretKeyTextBox.Text, readTokenTextBox.Text);
+				//init sdk info
+				PlvPlayerSDK.PLVAccountInfo accountInfo;
+				accountInfo.userId = userIdTextBox.Text;
+				accountInfo.secretKey = secretKeyTextBox.Text;
+				accountInfo.appId = null;
+				accountInfo.appSecret = null;
+				accountInfo.subAccount = false;
+				int ret = PlvPlayerSDK.PLVInitSdkLibrary(accountInfo);
                 ret = PlvPlayerSDK.PLVSetSdkKeepLastFrame(true);
                 ret = PlvPlayerSDK.PLVSetSdkViewerInfo(viewerId, viewerName, "");
 
@@ -160,41 +172,41 @@ namespace polyv_player_demo_csharp
                 }
                 if (player == IntPtr.Zero)
                 {
-                    playStateHandler = new PlvPlayerSDK.OnPlayerStateHandler(OnPlayerStateHandler);
+					playFrameLockHandler = new PlvPlayerSDK.OnPlayerVideoFrameHandler(OnPlayerFrameLockHandler);
+					playFrameUnlockHandler = new PlvPlayerSDK.OnPlayerVideoFrameHandler(OnPlayerFrameUnlockHandler);
+					playStateHandler = new PlvPlayerSDK.OnPlayerStateHandler(OnPlayerStateHandler);
                     playPropertyHandler = new PlvPlayerSDK.OnPlayerPropertyHandler(OnPlayerPropertyHandler);
                     playRateChangeHandler = new PlvPlayerSDK.OnPlayerRateChangeHandler(OnPlayerRateChangeHandler);
                     playProgressHandler = new PlvPlayerSDK.OnPlayerProgressHandler(OnPlayerProgressHandler);
                     playAudioDeviceHandler = new PlvPlayerSDK.OnPlayerAudioDeviceHandler(OnPlayerAudioDeviceHandler);
-                    player = PlvPlayerSDK.PLVPlayerCreate(playWindow.Handle);
-                    PlvPlayerSDK.PLVPlayerSetStateHandler(player, playStateHandler, IntPtr.Zero);
+					player = PlvPlayerSDK.PLVPlayerCreate(playWindow.Handle);
+					//player = PlvPlayerSDK.PLVPlayerCreate(IntPtr.Zero);
+					PlvPlayerSDK.PLVPlayerSetVideoFrameHandler(player, playFrameLockHandler, playFrameUnlockHandler, IntPtr.Zero);
+					PlvPlayerSDK.PLVPlayerSetStateHandler(player, playStateHandler, IntPtr.Zero);
                     PlvPlayerSDK.PLVPlayerSetPropertyHandler(player, playPropertyHandler, IntPtr.Zero);
                     PlvPlayerSDK.PLVPlayerSetRateChangeHandler(player, playRateChangeHandler, IntPtr.Zero);
                     PlvPlayerSDK.PLVPlayerSetProgressHandler(player, playProgressHandler, IntPtr.Zero);
                     PlvPlayerSDK.PLVPlayerSetAudioDeviceHandler(player, playAudioDeviceHandler, IntPtr.Zero);
                     PlvPlayerSDK.PLVPlayerSetVolumeMax(player, 200);
 
-                    PlvPlayerSDK.OSDConfigInfo osd;
+                    PlvPlayerSDK.PLVOsdConfigInfo osd;
                     osd.text = "test001";
                     osd.textSize = 45;
-                    osd.textColor = "#FF0000";// red
-                    osd.textAlpha = 100;
-                    osd.border = true;
-                    osd.borderWidth = 3;
-                    osd.borderColor = "#FFFFFF";// white
-                    osd.borderAlpha = 100;
-                    osd.animationEffect = PlvPlayerSDK.OSD_DISPLAY_TYPE.OSD_DISPALY_ROLL;
+                    osd.textColor = "#FFFF0000";// red
+					osd.borderSize = 1;
+					osd.borderColor = "#FFFFFFFF";// white
+					osd.animationEffect = PlvPlayerSDK.OSD_DISPLAY_TYPE.OSD_DISPALY_ROLL;
                     osd.displayDuration = 15;
                     osd.displayInterval = 1;
                     osd.fadeDuration = 0;
                     PlvPlayerSDK.PLVPlayerSetOSDConfig(player, true, osd);
 
-                    PlvPlayerSDK.LogoTextInfo logo;
-                    logo.text = "polyv";
-                    logo.textFontName = null;
-                    logo.textSize = 50;
-                    logo.textColor = "#FFFF0000";
-                    logo.borderWidth = 5;
-                    logo.borderColor = "#0FFFFFFF";
+                    PlvPlayerSDK.PLVLogoTextInfo logo;
+					logo.text = "polyv";
+					logo.textSize = 50;
+					logo.textColor = "#FFFF0000";
+					logo.borderSize = 1;
+					logo.borderColor = "#0FFFFFFF";
                     logo.alignX = 1;
                     logo.alignY = -1;
                     PlvPlayerSDK.PLVPlayerSetLogoText(player, true, logo);
@@ -254,7 +266,7 @@ namespace polyv_player_demo_csharp
             App.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
                 string status = "";
-                if (code == (int)PlvPlayerSDK.SDK_ERROR_TYPE.E_ABORT_DOWNLOAD)
+                if (code == (int)PlvPlayerSDK.SDK_ERROR_TYPE.E_ABORT_OPERATION)
                 {
                     status = string.Format("下载暂停或停止,代码：{0}", code);
                 }
@@ -317,7 +329,7 @@ namespace polyv_player_demo_csharp
         {
             try
             {
-                int ret = PlvPlayerSDK.PLVDownloadPause(downloader);
+                int ret = PlvPlayerSDK.PLVDownloadPause(downloader, true);
                 if (ret != 0)
                 {
                     appLog.Debug("download pause error! ret:" + ret);
@@ -375,7 +387,18 @@ namespace polyv_player_demo_csharp
         #endregion
 
         #region 播放功能
-        private void OnPlayerStateHandler(string vid, int state, IntPtr data)
+
+		private bool OnPlayerFrameLockHandler(string vid, ref PLVVideoFrame frame, IntPtr data)
+		{
+			frame.data0 = renderBuffer;
+			return true;
+		}
+
+		private bool OnPlayerFrameUnlockHandler(string vid, ref PLVVideoFrame frame, IntPtr data)
+		{
+			return true;
+		}
+		private void OnPlayerStateHandler(string vid, int state, IntPtr data)
         {
             string videoId = vid;// Marshal.PtrToStringAnsi(vid);
             App.Current.Dispatcher.BeginInvoke((Action)(() =>
@@ -392,9 +415,9 @@ namespace polyv_player_demo_csharp
                         break;
                     case PlvPlayerSDK.PLAYER_MEDIA_STATE.MEDIA_STATE_PLAY:
                         string rate = "自动";
-                        if (PlvPlayerSDK.PLVPlayerGetCurrentRate(player) == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_SD) { rate = "流畅"; }
-                        else if (PlvPlayerSDK.PLVPlayerGetCurrentRate(player) == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_HD) { rate = "高清"; }
-                        else if (PlvPlayerSDK.PLVPlayerGetCurrentRate(player) == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_BD) { rate = "超清"; }
+                        if (PlvPlayerSDK.PLVPlayerGetCurrentRate(player) == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_LD) { rate = "流畅"; }
+                        else if (PlvPlayerSDK.PLVPlayerGetCurrentRate(player) == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_SD) { rate = "高清"; }
+                        else if (PlvPlayerSDK.PLVPlayerGetCurrentRate(player) == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_HD) { rate = "超清"; }
                         playStatusLabel.Content = "播放" + " - " + rate;
                         playPauseButton.IsEnabled = true;
                         playResumeButton.IsEnabled = true;
@@ -511,9 +534,9 @@ namespace polyv_player_demo_csharp
                 if (inputRate != realRate)
                 {
 //                     string rate = "自动";
-//                     if (realRate == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_SD) { rate = "流畅"; }
-//                     else if (realRate == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_HD) { rate = "高清"; }
-//                     else if (realRate == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_BD) { rate = "超清"; }
+//                     if (realRate == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_LD) { rate = "流畅"; }
+//                     else if (realRate == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_SD) { rate = "高清"; }
+//                     else if (realRate == (int)PlvPlayerSDK.VIDEO_RATE_TYPE.VIDEO_RATE_HD) { rate = "超清"; }
 //                     MessageBox.Show("播放清晰度:" + rate);
                 }
                 appLog.Debug("OnPlayerRateChangeHandler, vid:" + videoId + " input:" + inputRate + " real:" + realRate);
@@ -534,9 +557,8 @@ namespace polyv_player_demo_csharp
             }));
         }
 
-        private void OnPlayerAudioDeviceHandler(string vid, int count, IntPtr data)
+        private void OnPlayerAudioDeviceHandler(int count, IntPtr data)
         {
-            string videoId = vid;// Marshal.PtrToStringAnsi(vid);
             App.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
                 if (count > 0)
@@ -547,7 +569,7 @@ namespace polyv_player_demo_csharp
                     }
                 }
                 audioDeviceCount = count;
-                appLog.Debug("OnPlayerAudioDeviceHandler,vid:" + videoId + " count:" + count);
+                appLog.Debug("OnPlayerAudioDeviceHandler,count:" + count);
             }));
         }
 
@@ -566,7 +588,7 @@ namespace polyv_player_demo_csharp
                 duration = 0;
                 playSlider.Value = 0;
                 playSpeedComboBox.SelectedIndex = 1;
-                int ret = PlvPlayerSDK.PLVPlayerSetVideo(player, vidTextBox.Text, ConvertUtf8(videoPath),
+                int ret = PlvPlayerSDK.PLVPlayerSetInfo(player, vidTextBox.Text, ConvertUtf8(videoPath),
                     Convert.ToInt32(playRateComboBox.SelectedIndex));
                 appLog.Debug("play start:vid:" + vidTextBox.Text +
                 " path:" + videoPath +
@@ -577,11 +599,11 @@ namespace polyv_player_demo_csharp
                     if (preloadPlayCheck.IsChecked == true)
                     {
                         appLog.Debug("preload play");
-                        ret = PlvPlayerSDK.PLVPlayerLoadLocal(player, 0);
+                        ret = PlvPlayerSDK.PLVPlayerLoadLocal(player, 0, true);
                     }
                     else
                     {
-                        ret = PlvPlayerSDK.PLVPlayerPlayLocal(player, 0);
+                        ret = PlvPlayerSDK.PLVPlayerPlayLocal(player, 0, true);
                     }
                 }
                 else
@@ -594,7 +616,7 @@ namespace polyv_player_demo_csharp
                         return;
                     }
                     //在线播放
-                    ret = PlvPlayerSDK.PLVPlayerPlay(player, playToken, 0, true);
+                    ret = PlvPlayerSDK.PLVPlayerPlay(player, playToken, 0, true, false, true);
                 }
                 if (ret != 0)
                 {
@@ -683,7 +705,7 @@ namespace polyv_player_demo_csharp
             if (inited)
             {
                 double pos = playSlider.Value * duration / 100;
-                PlvPlayerSDK.PLVPlayerSetSeek(player, (int)pos, true);
+                PlvPlayerSDK.PLVPlayerSetSeek(player, (int)pos);
                 playSeeking = false;
             }
         }
@@ -717,15 +739,15 @@ namespace polyv_player_demo_csharp
                         continuePlayCheck.IsChecked = false;
                         long pos = currentPos;
                         PlvPlayerSDK.PLVPlayerStop(player);
-                        int ret = PlvPlayerSDK.PLVPlayerSetVideo(player, vidTextBox.Text, ConvertUtf8(videoPath),
+                        int ret = PlvPlayerSDK.PLVPlayerSetInfo(player, vidTextBox.Text, ConvertUtf8(videoPath),
                             Convert.ToInt32(playRateComboBox.SelectedIndex));
                         if (localPlayCheck.IsChecked == false && playToken.Length > 0)
                         {
-                            PlvPlayerSDK.PLVPlayerPlay(player, playToken, (int)pos, true);
+                            PlvPlayerSDK.PLVPlayerPlay(player, playToken, (int)pos, true, false, true);
                         }
                         else
                         {
-                            PlvPlayerSDK.PLVPlayerPlayLocal(player, (int)pos);
+							PlvPlayerSDK.PLVPlayerPlayLocal(player, (int)pos, true);
                         }
                     }
                 }

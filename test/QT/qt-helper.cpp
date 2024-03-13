@@ -1,1 +1,0 @@
-#include "qt-helper.h"
