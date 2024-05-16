@@ -156,7 +156,6 @@ void MainWindow::on_initPushButton_clicked()
         }, this);
     PLVSetSdkLogLevel((LOG_FILTER_TYPE)ui->logLevelComboBox->currentIndex());
     PLVSetSdkLogFile(QT_TO_UTF8(ui->logPathLineEdit->text()));
-    PLVSetSdkCacertFile(QT_TO_UTF8(GetCAPath()));
     int retryAttempts = ui->retryAttemptsLineEdit->text().toInt();
     int retryMinSpace = ui->retryMinSpaceLineEdit->text().toInt();
     int retryMaxSpace = ui->retryMaxSpaceLineEdit->text().toInt();

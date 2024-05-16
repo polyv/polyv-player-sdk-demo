@@ -272,7 +272,11 @@ QString GetCrashPath()
 
 QString GetCAPath()
 {
+#ifdef _WIN32
     return QApplication::applicationDirPath() + "/cacert.pem";
+#elif defined(__APPLE__)
+    return QApplication::applicationDirPath() + "/../Resources/cacert.pem";
+#endif
 }
 
 QString GetVideoPath()
@@ -505,7 +509,7 @@ bool GetVideoToken(const QMap<QString, QString>& params, QString& token, std::at
     header = curl_slist_append(header, "application/x-www-form-urlencoded");
     CURL* curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
-    curl_easy_setopt(curl, CURLOPT_CAINFO, "./cacert.pem");
+    curl_easy_setopt(curl, CURLOPT_CAINFO, QT_TO_UTF8(GetCAPath()));
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2);
     curl_easy_setopt(curl, CURLOPT_URL, !subAccount ?
