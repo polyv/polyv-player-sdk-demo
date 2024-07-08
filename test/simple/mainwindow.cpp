@@ -234,7 +234,8 @@ void MainWindow::on_requestPushButton_clicked()
 
 void MainWindow::on_searchPushButton_clicked()
 {
-    std::string vids = ui->vidsearchLineEdit->text().toStdString();
+    QString text = ui->vidsearchLineEdit->text();
+    std::string vids = text.trimmed().toStdString();
     PLVVideoRequestParam param;
     param.type = VIDEO_REQUEST_VID;
     param.vids = vids.c_str();

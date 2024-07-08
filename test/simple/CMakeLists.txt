@@ -110,8 +110,9 @@ if(WIN32)
 	VERBATIM)
 else()
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/Resources"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 			"${CMAKE_BINARY_DIR}/plv-player-sdk/${SDK_RELATIVE_PATH}/lib/cacert.pem"
-			"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/MacOS"
+			"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/Resources"
 	VERBATIM)
 endif()
