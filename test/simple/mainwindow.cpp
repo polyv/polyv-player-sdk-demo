@@ -12,6 +12,7 @@
 #include <QDesktopServices>
 #include <QShortcut>
 #include <QScrollBar>
+#include <QTimer>
 #include "playimage.h"
 
 #ifndef ALIGN_SIZE
@@ -185,7 +186,52 @@ void MainWindow::on_initPushButton_clicked()
     }
     on_requestPushButton_clicked();
     InitPlayer();
+    InitLivePlayer();
     EnableControl(true);
+    // Print audio device list
+    QTimer::singleShot(500, Qt::CoarseTimer, this, [this]() {
+	    auto count = PLVGetAudioDeviceCount();
+	    for (int i = 0; i < count; i++) {
+		    char deviceId[512]{}, deviceName[512]{};
+		    PLVGetAudioDeviceInfo(i, deviceId, deviceName);
+		    QString msg = QString("Audio device:%1,id:%2,name:%3")
+					  .arg(QString::number(i))
+					  .arg(QT_UTF8(deviceId))
+					  .arg(QT_UTF8(deviceName));
+		    OnShowMsg(msg, MsgAPI);
+	    }
+    });
+    // check vm
+    int vmFlags = PLVDetectVM();
+    bool vmMac = !!(vmFlags & 0x00000001);
+    bool vmBoard = !!(vmFlags & 0x00000002);
+    bool VMDisk = !!(vmFlags & 0x00000004);
+    bool VMSystemModel = !!(vmFlags & 0x00000008);
+    bool VMVendorIdByCpuid = !!(vmFlags & 0x00000010);
+    bool VMInvalidLeafByCpuId = !!(vmFlags & 0x00000020);
+    bool VMHigestLowLeafByCpuId = !!(vmFlags & 0x00000040);
+    bool VMWine = !!(vmFlags & 0x00000080);
+    const char *vmTips = R"(
+        VM Detect Result:
+        1.Detect VM by MAC address:%1
+        2.Detect VM by motherboard serial number:%2
+        3.Detect VM by disk caption:%3
+        4.Detect VM by system model:%4
+        5.Detect VM by vendor id of:%5
+        6.Detect VM by Invalid leaf:%6
+        7.Detect VM by highest low function leaf:%7
+        8.Detect VM in wine:%8
+    )";
+    OnShowMsg(QString(vmTips)
+		      .arg(vmMac)
+		      .arg(vmBoard)
+		      .arg(VMDisk)
+		      .arg(VMSystemModel)
+		      .arg(VMVendorIdByCpuid)
+		      .arg(VMInvalidLeafByCpuId)
+		      .arg(VMHigestLowLeafByCpuId)
+		      .arg(VMWine),
+	      MsgTips);
 }
 
 void MainWindow::on_freePushButton_clicked()
@@ -193,6 +239,7 @@ void MainWindow::on_freePushButton_clicked()
     on_customStopPushButton_clicked();
     FreeDownloaders();
     FreePlayer();
+    FreeLivePlayer();
     EnableControl(false);
     PLVReleaseSdkLibrary();
 }
@@ -209,6 +256,7 @@ void MainWindow::on_detectSoftwareRecordCheckBox_clicked()
     PLVSetPreventSoftwareRecording((void*)winId(), enable);
     //If the full screen playback window is an independent top-level window, you needs prevent recording too.
     playWnd->SetPreventSoftwareRecording(enable);
+    livePlayWnd->SetPreventSoftwareRecording(enable);
 }
 
 void MainWindow::on_detectHardwareRecordCheckBox_clicked()
@@ -228,7 +276,7 @@ void MainWindow::on_requestPushButton_clicked()
     param.type = VIDEO_REQUEST_PAGE;
     param.vids = nullptr;
     param.page = ui->pageSpinBox->value();
-    param.pageSize = 20;
+    param.pageSize = 100;
     RequestVideoList(&param);
 }
 
@@ -240,7 +288,7 @@ void MainWindow::on_searchPushButton_clicked()
     param.type = VIDEO_REQUEST_VID;
     param.vids = vids.c_str();
     param.page = 1;
-    param.pageSize = 20;
+    param.pageSize = 100;
     RequestVideoList(&param);
 }
 
@@ -268,13 +316,17 @@ void MainWindow::OnVideoInfo(int code, QVariantList videoList, QVariantMap pageI
     ui->videoTableWidget->setRowCount(0);
     for (auto& item : videoList) {
         auto video = item.toMap();
+	    int status = video.value("status").toInt();
+	    if (status == -1) {
+	        continue;
+        }
         int row = ui->videoTableWidget->rowCount();
         ui->videoTableWidget->insertRow(row);
         auto item0 = new QTableWidgetItem(video.value("title").toString());
         item0->setData(Qt::UserRole, video);
         auto item1 = new QTableWidgetItem(video.value("encrypt").toBool() ? "encrypt" : "normal");
         auto item2 = new QTableWidgetItem(video.value("vid").toString());
-        auto item3 = new QTableWidgetItem(QString::number(video.value("status").toInt()));
+	    auto item3 = new QTableWidgetItem(QString::number(status));
         auto item4 = new QTableWidgetItem(GetFileSizeString(video.value("sourceFilesize").toLongLong()));
         auto item5 = new QTableWidgetItem(GetTimeString((int64_t)video.value("duration").toReal()));
         auto item6 = new QTableWidgetItem(GetRateListString(video.value("rates").toList()));
@@ -450,21 +502,26 @@ void MainWindow::on_volumeHorizontalSlider_valueChanged(int value)
     ui->volumeLabel->setText(QString::number(value));
 }
 
-void MainWindow::on_hardwareDecodeCheckBox_clicked()
+void MainWindow::on_hardwareDecodeCheckBox_clicked(bool checked)
 {
-    PLVSetSdkHwdecEnable(ui->hardwareDecodeCheckBox->isChecked());
+    PLVSetSdkHwdecEnable(checked);
+    ui->hardwareDecodeCheckBox->setChecked(checked);
+    ui->liveHardwareDecodeCheckBox->setChecked(checked);
 }
 
-void MainWindow::on_keepLastFrameCheckBox_clicked()
+void MainWindow::on_keepLastFrameCheckBox_clicked(bool checked)
 {
-    PLVSetSdkKeepLastFrame(ui->keepLastFrameCheckBox->isChecked());
+    PLVSetSdkKeepLastFrame(checked);
+    ui->keepLastFrameCheckBox->setChecked(checked);
+    ui->liveKeepLastFrameCheckBox->setChecked(checked);
 }
 
-void MainWindow::on_videoOutputComboBox_currentIndexChanged(int)
+void MainWindow::on_videoOutputComboBox_currentIndexChanged(int index)
 {
 #ifdef _WIN32
-    int vo = ui->videoOutputComboBox->currentIndex();
-    PLVSetSdkVideoOutputDevice(VIDEO_OUTPUT_DEVICE(vo), nullptr);
+    PLVSetSdkVideoOutputDevice(VIDEO_OUTPUT_DEVICE(index), nullptr);
+    ui->videoOutputComboBox->setCurrentIndex(index);
+    ui->liveVideoOutputComboBox->setCurrentIndex(index);
 #endif
 }
 
@@ -532,6 +589,12 @@ void MainWindow::OnMediaState(QString vid, int state)
     mediaState = state;
     ui->playStatusLabel->setText(GetPlayStateString(currentRate, mediaState));
     OnShowMsg(QString("vid:%1,state:%2").arg(vid).arg(GetStateName(state)), MsgCallback);
+    if (state == MEDIA_STATE_FAIL || state == MEDIA_STATE_BEGIN_CACHE) {
+	    // TODO:Prompt the user here whether to switch quality!
+	    if (PLVPlayerGetCurrentRateCount(player) > 1) {
+	        OnShowMsg("Video lag! Switch rate?", MsgTips);
+	    }
+    }
 }
 
 void MainWindow::OnMediaProperty(QString vid, int property, int format, QString value)
@@ -549,7 +612,7 @@ void MainWindow::OnMediaProperty(QString vid, int property, int format, QString 
     case MEDIA_PROPERTY_CACHE_SPEED: cacheSpeed = value; break;
     default: break;
     }
-    QString playInfo = QString("Video:%1%2,%3x%4@%5-%6kbps,Audio:%7-%8kbps,Cache:%9kbps")
+    QString playInfo = QString("Video:%1%2,%3x%4@%5-%6kbps,Audio:%7-%8kbps,Cache:%9KB/s")
         .arg(vCodec.left(vCodec.indexOf(" (")))
         .arg(hwdec != "" && hwdec != "no" ? QString("-%1").arg(hwdec) : "")
         .arg(width).arg(height).arg(QString::number(fps.toFloat(), 'f', 2)).arg(vBitrate.toLongLong() / 1024)
@@ -1009,6 +1072,7 @@ void MainWindow::EnableControl(bool initialized)
 #else
     ui->tabWidget->setTabEnabled(TabVideoCustomRender, false);
 #endif
+    ui->tabWidget->setTabEnabled(TabLivePlay, initialized);
 }
 
 void MainWindow::LoadConfig()
@@ -1097,6 +1161,58 @@ void MainWindow::LoadConfig()
     //download
     QString localVideoPath = settings.value("localVideoPath", GetVideoPath()).toString();
     ui->localVideoPathLineEdit->setText(localVideoPath);
+
+    ////////////////////////////
+    //for live
+    QString channelId = settings.value("channelId").toString();
+    ui->channelIdLineEdit->setText(channelId);
+    ui->liveHardwareDecodeCheckBox->setChecked(hardwareDecode);
+    ui->liveKeepLastFrameCheckBox->setChecked(keepLastFrame);
+    ui->liveVideoOutputComboBox->setCurrentIndex(videoOutput);
+    bool speedTracking = settings.value("speedTracking", true).toBool();
+    ui->speedTrackingCheckBox->setChecked(speedTracking);
+    bool seekTracking = settings.value("seekTracking", true).toBool();
+    ui->seekTrackingCheckBox->setChecked(seekTracking);
+    int cacheTime = settings.value("cacheTime", 2000).toInt();
+    ui->cacheTimeComboBox->setCurrentIndex(ui->cacheTimeComboBox->findText(QString::number(cacheTime)));
+    //live logo
+    bool liveLogoEnable = settings.value("liveLogoEnable", false).toBool();
+    ui->liveLogoEnableCheckBox->setChecked(liveLogoEnable);
+    QString liveLogoText = settings.value("liveLogoText").toString();
+    ui->liveLogoTextLineEdit->setText(liveLogoText);
+    int liveLogoTextSize = settings.value("liveLogoTextSize", 55).toInt();
+    ui->liveLogoTextSizeLineEdit->setText(QString::number(liveLogoTextSize));
+    QString liveLogoTextColor = settings.value("liveLogoTextColor", "#FF000000").toString();
+    ui->liveLogoTextColorLineEdit->setText(liveLogoTextColor);
+    int liveLogoBorderSize = settings.value("liveLogoBorderSize", 1).toInt();
+    ui->liveLogoBorderSizeLineEdit->setText(QString::number(liveLogoBorderSize));
+    QString liveLogoBorderColor = settings.value("liveLogoBorderColor", "#FFFFFFFF").toString();
+    ui->liveLogoBorderColorLineEdit->setText(liveLogoBorderColor);
+    int liveLogoHPos = settings.value("liveLogoHPos", 2).toInt();
+    ui->liveLogoHPosComboBox->setCurrentIndex(liveLogoHPos);
+    int liveLogoVPos = settings.value("liveLogoVPos", 0).toInt();
+    ui->liveLogoVPosComboBox->setCurrentIndex(liveLogoVPos);
+    //live osd
+    bool liveOsdEnable = settings.value("liveOsdEnable", false).toBool();
+    ui->liveOsdEnableCheckBox->setChecked(liveOsdEnable);
+    QString liveOsdText = settings.value("liveOsdText").toString();
+    ui->liveOsdTextLineEdit->setText(liveOsdText);
+    int liveOsdTextSize = settings.value("liveOsdTextSize", 55).toInt();
+    ui->liveOsdTextSizeLineEdit->setText(QString::number(liveOsdTextSize));
+    QString liveOsdTextColor = settings.value("liveOsdTextColor", "#FF000000").toString();
+    ui->liveOsdTextColorLineEdit->setText(liveOsdTextColor);
+    int liveOsdBorderSize = settings.value("liveOsdBorderSize", 0).toInt();
+    ui->liveOsdBorderSizeLineEdit->setText(QString::number(liveOsdBorderSize));
+    QString liveOsdBorderColor = settings.value("liveOsdBorderColor", "#FFFFFFFF").toString();
+    ui->liveOsdBorderColorLineEdit->setText(liveOsdBorderColor);
+    int liveOsdEffect = settings.value("liveOsdEffect", 0).toInt();
+    ui->liveOsdEffectComboBox->setCurrentIndex(liveOsdEffect);
+    int liveOsdDuration = settings.value("liveOsdDuration", 5).toInt();
+    ui->liveOsdDurationSpinBox->setValue(liveOsdDuration);
+    int liveOsdSpace = settings.value("liveOsdSpace", 1).toInt();
+    ui->liveOsdSpaceSpinBox->setValue(liveOsdSpace);
+    int liveOsdFade = settings.value("liveOsdFade", 3).toInt();
+    ui->liveOsdFadeSpinBox->setValue(liveOsdFade);
 }
 
 void MainWindow::SaveConfig()
@@ -1184,6 +1300,51 @@ void MainWindow::SaveConfig()
     //download
     QString localVideoPath = ui->localVideoPathLineEdit->text();
     settings.setValue("localVideoPath", localVideoPath);
+    ////////////////////////////
+    //for live
+    settings.setValue("channelId", ui->channelIdLineEdit->text());
+    settings.setValue("speedTracking", ui->speedTrackingCheckBox->isChecked());
+    settings.setValue("seekTracking", ui->seekTrackingCheckBox->isChecked());
+    settings.setValue("cacheTime", ui->cacheTimeComboBox->currentText().toInt());
+    //live logo
+    bool liveLogoEnable = ui->liveLogoEnableCheckBox->isChecked();
+    settings.setValue("liveLogoEnable", liveLogoEnable);
+    QString liveLogoText = ui->liveLogoTextLineEdit->text();
+    settings.setValue("liveLogoText", liveLogoText);
+    int liveLogoTextSize = ui->liveLogoTextSizeLineEdit->text().toInt();
+    settings.setValue("liveLogoTextSize", liveLogoTextSize);
+    QString liveLogoTextColor = ui->liveLogoTextColorLineEdit->text();
+    settings.setValue("liveLogoTextColor", liveLogoTextColor);
+    int liveLogoBorderSize = ui->liveLogoBorderSizeLineEdit->text().toInt();
+    settings.setValue("liveLogoBorderSize", liveLogoBorderSize);
+    QString liveLogoBorderColor = ui->liveLogoBorderColorLineEdit->text();
+    settings.setValue("liveLogoBorderColor", liveLogoBorderColor);
+    int liveLogoHPos = ui->liveLogoHPosComboBox->currentIndex();
+    settings.setValue("liveLogoHPos", liveLogoHPos);
+    int liveLogoVPos = ui->liveLogoVPosComboBox->currentIndex();
+    settings.setValue("liveLogoVPos", liveLogoVPos);
+    //live osd
+    bool liveOsdEnable = ui->liveOsdEnableCheckBox->isChecked();
+    settings.setValue("liveOsdEnable", liveOsdEnable);
+    QString liveOsdText = ui->liveOsdTextLineEdit->text();
+    settings.setValue("liveOsdText", liveOsdText);
+    int liveOsdTextSize = ui->liveOsdTextSizeLineEdit->text().toInt();
+    settings.setValue("liveOsdTextSize", liveOsdTextSize);
+    QString liveOsdTextColor = ui->liveOsdTextColorLineEdit->text();
+    settings.setValue("liveOsdTextColor", liveOsdTextColor);
+    int liveOsdBorderSize = ui->liveOsdBorderSizeLineEdit->text().toInt();
+    settings.setValue("liveOsdBorderSize", liveOsdBorderSize);
+    QString liveOsdBorderColor = ui->liveOsdBorderColorLineEdit->text();
+    settings.setValue("liveOsdBorderColor", liveOsdBorderColor);
+    int liveOsdEffect = ui->liveOsdEffectComboBox->currentIndex();
+    settings.setValue("liveOsdEffect", liveOsdEffect);
+    int liveOsdDuration = ui->liveOsdDurationSpinBox->value();
+    settings.setValue("liveOsdDuration", liveOsdDuration);
+    int liveOsdSpace = ui->liveOsdSpaceSpinBox->value();
+    settings.setValue("liveOsdSpace", liveOsdSpace);
+    int liveOsdFade = ui->liveOsdFadeSpinBox->value();
+    settings.setValue("liveOsdFade", liveOsdFade);
+
     settings.sync();
 }
 
@@ -1253,16 +1414,10 @@ void MainWindow::InitPlayer()
             QString msg = QString("audio play error!");
             QMetaObject::invokeMethod(obj, "OnShowMsg", Q_ARG(const QString&, msg), Q_ARG(int, MsgCallback));
         }, this);
-    PLVPlayerSetAudioDeviceHandler(player,
-        [](int audioDeviceCount, void* data) {
-            auto obj = static_cast<MainWindow*>(data);
-            QString msg = QString("audio device count:%1").arg(audioDeviceCount);
-            QMetaObject::invokeMethod(obj, "OnShowMsg", Q_ARG(const QString&, msg), Q_ARG(int, MsgCallback));
-        }, this);
     connect(ui->progressWidget, SIGNAL(seek(qint64)), this, SLOT(OnSeek(qint64)));
     //config
-    on_hardwareDecodeCheckBox_clicked();
-    on_keepLastFrameCheckBox_clicked();
+    on_hardwareDecodeCheckBox_clicked(ui->hardwareDecodeCheckBox->isChecked());
+    on_keepLastFrameCheckBox_clicked(ui->keepLastFrameCheckBox->isChecked());
     on_videoOutputComboBox_currentIndexChanged(ui->videoOutputComboBox->currentIndex());
     on_logoEnableCheckBox_clicked();
     on_osdEnableCheckBox_clicked();
@@ -1401,4 +1556,366 @@ void MainWindow::ScanFiles()
             }
         }
     }
+}
+
+void MainWindow::on_livePlayPushButton_clicked()
+{
+    channelId = ui->channelIdLineEdit->text();
+    if (channelId.isEmpty()) {
+	    QMessageBox::information(this, "Tips", QTStr("LivePlayChannelIdEmpty"));
+	    return;
+    }
+    PLVLivePlayerSetToken(livePlayer, QT_TO_UTF8(ui->livePlayTokenLineEdit->text())); // you can update token during playing.
+    PLVLivePlayerPlay(livePlayer, QT_TO_UTF8(channelId));
+}
+
+void MainWindow::on_liveStopPushButton_clicked()
+{
+    PLVLivePlayerStop(livePlayer);
+    ui->liveLineComboBox->clear();
+    ui->liveQualityComboBox->clear();
+    ui->liveLineComboBox->setEnabled(false);
+    ui->liveQualityComboBox->setEnabled(false);
+    ui->liveAudioPlayModeCheckBox->setEnabled(false);
+}
+
+void MainWindow::on_liveLineComboBox_currentIndexChanged(int index)
+{
+    if (IsLivePlaying()) {
+	    PLVLivePlayerSetLine(livePlayer, index);
+        // reset quality index
+	    ui->liveQualityComboBox->blockSignals(true);
+	    ui->liveQualityComboBox->clear();
+	    QVariantList qualitys = ui->liveLineComboBox->currentData().toList();
+	    for (int j = 0; j < qualitys.size(); j++) {
+	        ui->liveQualityComboBox->addItem(qualitys.at(j).toString() + QString(j == 0 ? "-Default" : ""));
+	    }
+	    if (qualitys.empty()) {
+		    ui->liveQualityComboBox->setEnabled(false);
+	    } else {
+		    ui->liveQualityComboBox->setEnabled(true);
+		    ui->liveQualityComboBox->setCurrentIndex(0);
+        }
+	    ui->liveQualityComboBox->blockSignals(false);
+    }
+}
+
+void MainWindow::on_liveQualityComboBox_currentIndexChanged(int index)
+{
+    if (IsLivePlaying()) {
+	    PLVLivePlayerSetQuality(livePlayer, index);
+    }
+}
+
+void MainWindow::on_liveAudioPlayModeCheckBox_clicked(bool checked) 
+{
+    if (IsLivePlaying()) {
+	    PLVLivePlayerSetPlayMode(livePlayer, checked ? PLAY_AUDIO_ONLY : PLAY_AUDIO_VIDEO);
+    }
+}
+
+void MainWindow::on_livePausePushButton_clicked() 
+{
+    if (IsLivePlaying()) {
+	    PLVLivePlayerPause(livePlayer, true);
+    }
+}
+
+void MainWindow::on_liveResumePushButton_clicked()
+{
+    if (IsLivePlaying()) {
+	    PLVLivePlayerPause(livePlayer, false);
+    }
+}
+
+void MainWindow::on_liveShotScreenPushButton_clicked()
+{
+    if (IsLivePlaying()) {
+	    QString filepath = GetScreenshotPath() + "/" + QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss.jpg");
+	    PLVLivePlayerScreenshot(livePlayer, QT_TO_UTF8(filepath));
+	    int ret = QMessageBox::question(this, QTStr("PlayScreenshot"),
+					    QString("%1,%2?").arg(filepath).arg(QTStr("OpenDir")));
+	    if (ret == QMessageBox::Yes) {
+	        QDesktopServices::openUrl(QUrl::fromLocalFile(GetScreenshotPath()));
+	    }
+    }
+}
+
+void MainWindow::on_liveFullScreenPushButton_clicked()
+{
+    livePlayWnd->SwitchFullScreen();
+}
+
+void MainWindow::on_liveMuteCheckBox_clicked(bool checked)
+{
+    if (!livePlayer) {return;}
+    PLVLivePlayerMute(livePlayer, checked);
+}
+
+void MainWindow::on_liveVolumeHorizontalSlider_valueChanged(int val) 
+{
+    if (!livePlayer) {return;}
+    PLVLivePlayerSetVolume(livePlayer, val);
+    ui->liveVolumeLabel->setText(QString::number(val));
+}
+
+void MainWindow::on_liveHardwareDecodeCheckBox_clicked(bool checked)
+{
+    on_hardwareDecodeCheckBox_clicked(checked);
+}
+
+void MainWindow::on_liveKeepLastFrameCheckBox_clicked(bool checked)
+{
+    on_keepLastFrameCheckBox_clicked(checked);
+}
+
+void MainWindow::on_liveVideoOutputComboBox_currentIndexChanged(int index)
+{
+    on_videoOutputComboBox_currentIndexChanged(index);
+}
+
+void MainWindow::on_speedTrackingCheckBox_clicked() 
+{
+    int cacheTime = ui->cacheTimeComboBox->currentText().toInt();
+    bool speedTracking = ui->speedTrackingCheckBox->isChecked();
+    bool seekTracking = ui->seekTrackingCheckBox->isChecked();
+    PLVLivePlayerSetCacheConfig(livePlayer, cacheTime, speedTracking, seekTracking);
+}
+
+void MainWindow::on_seekTrackingCheckBox_clicked(bool)
+{
+    on_speedTrackingCheckBox_clicked();
+}
+
+void MainWindow::on_cacheTimeComboBox_currentIndexChanged(int)
+{
+    on_speedTrackingCheckBox_clicked();
+}
+
+void MainWindow::OnLiveMediaState(int state)
+{
+    liveMediaState = state;
+    ui->livePlayStatusLabel->setText(GetStateName(liveMediaState));
+    OnShowMsg(QString("channel:%1,state:%2").arg(channelId).arg(GetStateName(liveMediaState)));
+    if (state == MEDIA_STATE_FAIL || state == MEDIA_STATE_BEGIN_CACHE) {
+        // TODO:Prompt the user here whether to switch line or quality!
+	    if (ui->liveLineComboBox->isEnabled() && ui->liveLineComboBox->count() > 1) {
+		    OnShowMsg("Video lag! Switch line?", MsgTips);
+	    }
+	    if (ui->liveQualityComboBox->isEnabled() && ui->liveQualityComboBox->count() > 1) {
+		    OnShowMsg("Video lag! Switch quality?", MsgTips);
+        }
+    }
+}
+
+void MainWindow::OnLiveChannelState(int state)
+{
+    liveChannelState = state;
+    ui->liveChannelStateLabel->setText(GetChannelStateName(liveChannelState));
+    OnShowMsg(QString("channel:%1,live state:%2").arg(channelId).arg(GetChannelStateName(liveChannelState)));
+}
+
+void MainWindow::OnLiveChannelInfo(QVariantMap info)
+{
+    auto channelId = info.value("channelId").toString();
+    auto name = info.value("name").toString();
+    auto lines = info.value("lines").toList();
+    auto isOnlyAudio = info.value("isOnlyAudio").toBool();
+    //This callback may be called multiple times, Only need set UI once.
+    if (ui->liveLineComboBox->count() > 0) {
+        return;
+    }
+    ui->liveLineComboBox->blockSignals(true);
+    ui->liveLineComboBox->clear();
+    for (int i = 0; i < lines.size(); i++) {
+	    ui->liveLineComboBox->addItem(QString("%1 %2").arg(QTStr("ChannelLine")).arg(QString::number(i + 1)), lines.at(i));
+    }
+    if (lines.empty()) {
+	    ui->liveLineComboBox->setEnabled(false);
+	    ui->liveQualityComboBox->setEnabled(false);
+    } else {
+	    ui->liveLineComboBox->setEnabled(true);
+	    ui->liveLineComboBox->setCurrentIndex(0);
+	    on_liveLineComboBox_currentIndexChanged(0);
+    }
+    ui->liveLineComboBox->blockSignals(false);
+    ui->liveAudioPlayModeCheckBox->setEnabled(!isOnlyAudio);
+    ui->liveAudioPlayModeCheckBox->setChecked(isOnlyAudio);
+    QFontMetrics fm(ui->liveChannelNameLabel->font());
+    QString showStr = fm.elidedText(name, Qt::ElideMiddle, 500);
+    if (showStr == name) {
+	    ui->liveChannelNameLabel->setText(showStr);
+    } else {
+	    ui->liveChannelNameLabel->setText(showStr);
+	    ui->liveChannelNameLabel->setToolTip(name);
+    }
+}
+
+void MainWindow::OnLiveMediaProperty(int property, int format, QString value) 
+{
+    switch (property) {
+    case MEDIA_PROPERTY_HWDEC: liveHwdec = value; break;
+    case MEDIA_PROPERTY_VIDEO_CODEC: liveVCodec = value; break;
+    case MEDIA_PROPERTY_VIDEO_BITRATE: liveVBitrate = value; break;
+    case MEDIA_PROPERTY_VIDEO_FPS: liveFps = value; break;
+    case MEDIA_PROPERTY_VIDEO_WIDTH: liveWidth = value; break;
+    case MEDIA_PROPERTY_VIDEO_HEIGHT: liveHeight = value; break;
+    case MEDIA_PROPERTY_AUDIO_CODEC: liveACodec = value; break;
+    case MEDIA_PROPERTY_AUDIO_BITRATE: liveABitrate = value; break;
+    case MEDIA_PROPERTY_CACHE_SPEED: liveCacheSpeed = value; break;
+    default: break;
+    }
+    QString playInfo = QString("Video:%1%2,%3x%4@%5-%6kbps,Audio:%7-%8kbps,Cache:%9KB/s")
+			       .arg(liveVCodec.left(liveVCodec.indexOf(" (")))
+			       .arg(liveHwdec != "" && liveHwdec != "no" ? QString("-%1").arg(liveHwdec) : "")
+			       .arg(liveWidth)
+			       .arg(liveHeight)
+			       .arg(QString::number(liveFps.toFloat(), 'f', 2))
+			       .arg(liveVBitrate.toLongLong() / 1024)
+			       .arg(liveACodec.left(liveACodec.indexOf(" (")))
+			       .arg(liveABitrate.toLongLong() / 1024)
+			       .arg(liveCacheSpeed.toLongLong() / 1024);
+    ui->livePlayInfoLabel->setText(playInfo);
+}
+
+void MainWindow::on_liveLogoEnableCheckBox_clicked()
+{
+    if (!livePlayer) { return; }
+    bool liveLogoEnable = ui->liveLogoEnableCheckBox->isChecked();
+    std::string liveLogoText = ui->liveLogoTextLineEdit->text().toStdString();
+    int liveLogoTextSize = ui->liveLogoTextSizeLineEdit->text().toInt();
+    std::string liveLogoTextColor = ui->liveLogoTextColorLineEdit->text().toStdString();
+    int liveLogoBorderSize = ui->liveLogoBorderSizeLineEdit->text().toInt();
+    std::string liveLogoBorderColor = ui->liveLogoBorderColorLineEdit->text().toStdString();
+    int liveLogoHPos = ui->liveLogoHPosComboBox->currentIndex() - 1;
+    int liveLogoVPos = ui->liveLogoVPosComboBox->currentIndex() - 1;
+    liveLogoEnable = liveLogoEnable && !liveLogoText.empty();
+    PLVLogoTextInfo info;
+    info.text = liveLogoText.c_str();
+    info.textSize = liveLogoTextSize;
+    info.textColor = liveLogoTextColor.c_str();
+    info.borderSize = liveLogoBorderSize;
+    info.borderColor = liveLogoBorderColor.c_str();
+    info.alignX = liveLogoHPos;
+    info.alignY = liveLogoVPos;
+    PLVLivePlayerSetLogoText(livePlayer, liveLogoEnable, &info);
+}
+
+void MainWindow::on_liveOsdEnableCheckBox_clicked()
+{
+    if (!livePlayer) { return; }
+    bool liveOsdEnable = ui->liveOsdEnableCheckBox->isChecked();
+    std::string liveOsdText = ui->liveOsdTextLineEdit->text().toStdString();
+    int liveOsdTextSize = ui->liveOsdTextSizeLineEdit->text().toInt();
+    std::string liveOsdTextColor = ui->liveOsdTextColorLineEdit->text().toStdString();
+    int liveOsdBorderSize = ui->liveOsdBorderSizeLineEdit->text().toInt();
+    std::string liveOsdBorderColor = ui->liveOsdBorderColorLineEdit->text().toStdString();
+    int liveOsdEffect = ui->liveOsdEffectComboBox->currentIndex();
+    int liveOsdDuration = ui->liveOsdDurationSpinBox->value();
+    int liveOsdSpace = ui->liveOsdSpaceSpinBox->value();
+    int liveOsdFade = ui->liveOsdFadeSpinBox->value();
+    liveOsdEnable = liveOsdEnable && !liveOsdText.empty();
+    PLVOsdConfigInfo info;
+    info.text = liveOsdText.c_str();
+    info.textSize = liveOsdTextSize;
+    info.textColor = liveOsdTextColor.c_str();
+    info.borderSize = liveOsdBorderSize;
+    info.borderColor = liveOsdBorderColor.c_str();
+    info.animationEffect = OSD_DISPLAY_TYPE(liveOsdEffect);
+    info.displayDuration = liveOsdDuration;
+    info.displayInterval = liveOsdSpace;
+    info.fadeDuration = liveOsdFade;
+    PLVLivePlayerSetOSDConfig(livePlayer, liveOsdEnable, &info);
+}
+
+void MainWindow::on_liveShrinkOrExpandPushButton_clicked()
+{
+    bool shrink = ui->liveShrinkOrExpandPushButton->property("status").toBool();
+    ui->liveShrinkOrExpandPushButton->setProperty("status", !shrink);
+    ui->liveShrinkOrExpandPushButton->setText(shrink ? QTStr("Shrink") : QTStr("Expand"));
+    ui->livePlayControlGroupBox->setVisible(shrink);
+    ui->liveLogoGroupBox->setVisible(shrink);
+    ui->liveOsdGroupBox->setVisible(shrink);
+}
+
+void MainWindow::InitLivePlayer()
+{
+    if (!livePlayWnd) {
+	    livePlayWnd = new SimplePlayWidget();
+	    auto layout = new QGridLayout(ui->livePlayLabel);
+	    layout->setContentsMargins(0, 0, 0, 0);
+	    layout->addWidget(livePlayWnd);
+    }
+    livePlayer = PLVLivePlayerCreate((void *)livePlayWnd->winId());
+    PLVLivePlayerSetStateHandler(
+	    livePlayer,
+	    [](int state, void *data) {
+		    auto obj = static_cast<MainWindow *>(data);
+		    QMetaObject::invokeMethod(obj, "OnLiveMediaState", Q_ARG(int, state));
+	    },
+	    this);
+    PLVLivePlayerSetPropertyHandler(
+	    livePlayer,
+	    [](int property, int format, const char *value, void *data) {
+		    auto obj = static_cast<MainWindow *>(data);
+		    QMetaObject::invokeMethod(obj, "OnLiveMediaProperty", Q_ARG(int, property), Q_ARG(int, format),
+					      Q_ARG(QString, QT_UTF8(value)));
+	    },
+	    this);
+    PLVLivePlayerSetAudioPlayErrorHandler(
+	    livePlayer,
+	    [](void *data) {
+		    auto obj = static_cast<MainWindow *>(data);
+		    QString msg = QString("audio play error!");
+		    QMetaObject::invokeMethod(obj, "OnShowMsg", Q_ARG(const QString &, msg), Q_ARG(int, MsgCallback));
+	    },
+	    this);
+    PLVLivePlayerSetChannelStateHandler(
+	    livePlayer,
+	    [](int state, void *data) {
+		    auto obj = static_cast<MainWindow *>(data);
+		    QMetaObject::invokeMethod(obj, "OnLiveChannelState", Q_ARG(int, state));
+	    },
+	    this);
+    PLVLivePlayerSetChannelInfoHandler(
+	    livePlayer,
+	    [](const PLVChannelInfo *channelInfo, void *data) {
+		    auto obj = static_cast<MainWindow *>(data);
+		    QVariantMap info;
+		    info.insert("channelId", QT_UTF8(channelInfo->channelId));
+		    info.insert("name", QT_UTF8(channelInfo->name));
+		    QVariantList lines;
+		    for (int i = 0; i < channelInfo->lineNum; i++) {
+			    QVariantList qualitys;
+			    auto &l = channelInfo->lines[i];
+			    for (int j = 0; j < l.qualityNum; j++) {
+				    qualitys.append(QT_UTF8(l.qualitys[j]));
+			    }
+			    lines.append(QVariant(qualitys));
+		    }
+		    info.insert("lines", QVariant(lines));
+		    info.insert("isOnlyAudio", channelInfo->isOnlyAudio);
+		    QMetaObject::invokeMethod(obj, "OnLiveChannelInfo", Q_ARG(QVariantMap, info));
+	    },
+	    this);
+    on_liveHardwareDecodeCheckBox_clicked(ui->liveHardwareDecodeCheckBox->isChecked());
+    on_liveKeepLastFrameCheckBox_clicked(ui->liveKeepLastFrameCheckBox->isChecked());
+    on_liveVideoOutputComboBox_currentIndexChanged(ui->liveVideoOutputComboBox->currentIndex());
+    on_speedTrackingCheckBox_clicked();
+    on_liveLogoEnableCheckBox_clicked();
+    on_liveOsdEnableCheckBox_clicked();
+}
+
+void MainWindow::FreeLivePlayer() 
+{
+    if (livePlayer) {
+	    PLVLivePlayerStop(livePlayer);
+	    PLVLivePlayerDestroy(livePlayer);
+	    livePlayer = nullptr;
+    }
+}
+
+bool MainWindow::IsLivePlaying()
+{
+    return (liveMediaState != MEDIA_STATE_NONE && liveMediaState != MEDIA_STATE_FAIL && liveMediaState != MEDIA_STATE_END);
 }

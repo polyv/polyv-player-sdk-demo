@@ -407,6 +407,18 @@ QString GetStateName(int state)
     }
 }
 
+QString GetChannelStateName(int state)
+{
+    switch (state) {
+    case CHANNEL_STATE_NONE: return QTStr("ChannelStateNone");
+    case CHANNEL_STATE_UNKNOWN: return QTStr("ChannelStateUnknown");
+    case CHANNEL_STATE_END: return QTStr("ChannelStateEnd");
+    case CHANNEL_STATE_PAUSE: return QTStr("ChannelStatePause");
+    case CHANNEL_STATE_LIVE: return QString("<font color='red'>%1</font>").arg(QTStr("ChannelStateLive"));
+    default: return QTStr("Unknown");
+    }
+}
+
 QString GetPlayStateString(int rate, int state)
 {
     return QTStr("PlayStateTips").arg(GetRateName(rate)).arg(GetStateName(state));

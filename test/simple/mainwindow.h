@@ -14,6 +14,7 @@ enum TabType {
     TabVideoPlay = 1,
     TabVideoDownload = 2,
     TabVideoCustomRender = 3,
+    TabLivePlay = 4,
 };
 //value same as LOG_FILTER_TYPE
 enum MsgType {
@@ -68,8 +69,8 @@ private slots:
     void on_speedComboBox_currentIndexChanged(int);
     void on_muteCheckBox_clicked();
     void on_volumeHorizontalSlider_valueChanged(int);
-    void on_hardwareDecodeCheckBox_clicked();
-    void on_keepLastFrameCheckBox_clicked();
+    void on_hardwareDecodeCheckBox_clicked(bool);
+    void on_keepLastFrameCheckBox_clicked(bool);
     void on_videoOutputComboBox_currentIndexChanged(int);
     void on_logoEnableCheckBox_clicked();
     void on_osdEnableCheckBox_clicked();
@@ -139,11 +140,60 @@ private:
     //custom render
 #define MIN_RENDER_WIDTH 256
 #define MIN_RENDER_HEIGHT 144
-#define MAX_RENDER_WIDTH 1920
-#define MAX_RENDER_HEIGHT 1088 //1088 align to 16! more fit!
+#define MAX_RENDER_WIDTH 2560
+#define MAX_RENDER_HEIGHT 1440
     PLVPlayerPtr customPlayer{ nullptr };
     std::atomic_bool renderBufferFill{ false };
     PLVVideoFrame renderFrame{ nullptr };
     std::atomic_uint64_t displaySize{ (960ull << 32)| 540ull };
+
+    //////////////////////////////////////////////////////////
+    /////////////////for live player//////////////////////////
+private slots:
+    void on_livePlayPushButton_clicked();
+	void on_liveStopPushButton_clicked();
+    void on_liveLineComboBox_currentIndexChanged(int);
+    void on_liveQualityComboBox_currentIndexChanged(int);
+    void on_liveAudioPlayModeCheckBox_clicked(bool);
+    void on_livePausePushButton_clicked();
+	void on_liveResumePushButton_clicked();
+    void on_liveShotScreenPushButton_clicked();
+	void on_liveFullScreenPushButton_clicked();
+    void on_liveMuteCheckBox_clicked(bool);
+	void on_liveVolumeHorizontalSlider_valueChanged(int val);
+    void on_liveHardwareDecodeCheckBox_clicked(bool);
+	void on_liveKeepLastFrameCheckBox_clicked(bool);
+    void on_liveVideoOutputComboBox_currentIndexChanged(int);
+	void on_speedTrackingCheckBox_clicked();
+    void on_seekTrackingCheckBox_clicked(bool);
+	void on_cacheTimeComboBox_currentIndexChanged(int);
+    void OnLiveMediaState(int state);
+	void OnLiveChannelState(int state);
+    void OnLiveChannelInfo(QVariantMap channelInfo);
+	void OnLiveMediaProperty(int property, int format, QString value);
+	void on_liveLogoEnableCheckBox_clicked();
+	void on_liveOsdEnableCheckBox_clicked();
+	void on_liveShrinkOrExpandPushButton_clicked();
+
+private:
+    void InitLivePlayer();
+	void FreeLivePlayer();
+    bool IsLivePlaying();
+
+private:
+	SimplePlayWidget *livePlayWnd{nullptr};
+    PLVLivePlayerPtr livePlayer{nullptr};
+	QString channelId;
+    int liveMediaState{MEDIA_STATE_NONE};
+	int liveChannelState{CHANNEL_STATE_NONE};
+    QString liveHwdec;
+    QString liveVCodec;
+    QString liveVBitrate;
+    QString liveFps;
+    QString liveWidth;
+    QString liveHeight;
+    QString liveACodec;
+    QString liveABitrate;
+    QString liveCacheSpeed;
 };
 #endif // MAINWINDOW_H

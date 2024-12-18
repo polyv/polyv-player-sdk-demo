@@ -10,8 +10,7 @@
 #include <atomic>
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
-#include "plv-player-core.h"
-#include "plv-player-download.h"
+#include "plv-player-core-CN.h"
 #include "curl/curl.h"
 
 class SimpleTranslator : public QTranslator {
@@ -112,6 +111,7 @@ QString GetTimeString(int64_t s);
 QString GetRateName(int type);
 QString GetRateListString(QVariantList rates);
 QString GetStateName(int state);
+QString GetChannelStateName(int state);
 QString GetPlayStateString(int rate, int state);
 
 //note:This is just an example, please get the token on the server!

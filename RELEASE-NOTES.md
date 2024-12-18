@@ -2,6 +2,19 @@
 
 SDK 的版本变更说明
 
+## Version 2.7.0
+新特性
+1. 支持频道直播拉流功能,针对直播播放器有一套新增的接口
+2. 支持虚拟机环境检测,目前仅支持Windows
+
+变更与修复
+1. C++接口标记为过时
+    1. PLVMigrateLocalVideoKeyFile 建议使用新的token接口
+    2. PLVPlayerSetAudioDeviceHandler 建议使用PLVGetAudioDeviceCount获取音频设备列表
+    3. PLVPlayerGetAudioDeviceCount 建议使用PLVGetAudioDeviceCount获取音频设备列表
+    4. PLVPlayerGetAudioDeviceInfo 建议使用PLVGetAudioDeviceInfo获取音频设备信息
+2. 修复VRM13视频在同步播放进度后,无法seek到0-10秒的问题
+
 ## Version 2.6.3
 变更与修复  
 1. 修复弱网情况下，播放器停止时间过长的问题
