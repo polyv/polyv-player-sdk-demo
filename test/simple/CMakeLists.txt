@@ -18,6 +18,9 @@ endif()
 list(APPEND CMAKE_PREFIX_PATH "${QTDIR}")
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+if(Qt6_FOUND)
+	find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+endif()
 message(STATUS "Qt Core Version: ${Qt${QT_VERSION_MAJOR}Core_VERSION}")
 find_package(CurlAndSsl REQUIRED)
 message(STATUS "CRYPTO_INCLUDE_DIRS:${CRYPTO_INCLUDE_DIRS},CLIENT_INCLUDE_DIRS:${CLIENT_INCLUDE_DIRS}")
@@ -49,6 +52,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
 	Qt${QT_VERSION_MAJOR}::Widgets
+	$<$<BOOL:${Qt6_FOUND}>:Qt6::OpenGLWidgets>
 	${CRYPTO_LIBS}
 	${CLIENT_LIBS}
 	${ZLIB_LIBS}
@@ -116,3 +120,4 @@ else()
 			"$<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/Resources"
 	VERBATIM)
 endif()
+set(CMAKE_SKIP_BUILD_RPATH FALSE)

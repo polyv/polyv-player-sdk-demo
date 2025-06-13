@@ -2,7 +2,9 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QApplication>
+#if QT_VERSION_MAJOR < 6
 #include <QTextCodec>
+#endif
 #include <QPainter>
 #include <QPaintEvent>
 #include <QJsonDocument>
@@ -16,9 +18,11 @@
 #include <sstream>
 #include "openssl/md5.h"
 
-SimpleTranslator::SimpleTranslator(const QString& path)
-    :settings(path, QSettings::IniFormat) {
-    settings.setIniCodec("utf-8");
+SimpleTranslator::SimpleTranslator(const QString &path) : settings(path, QSettings::IniFormat)
+{
+#if QT_VERSION_MAJOR < 6
+	settings.setIniCodec("utf-8");
+#endif
 }
 
 bool SimpleTranslator::isEmpty() const
@@ -514,7 +518,7 @@ bool GetVideoToken(const QMap<QString, QString>& params, QString& token, std::at
     }
     std::string postData = postDatass.str();
     //for curl
-    int errorCode = 200;
+    long errorCode = 200;
     char errorStr[CURL_ERROR_SIZE] = { 0 };
     std::string result;
     curl_slist* header = nullptr;

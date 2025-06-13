@@ -13,7 +13,7 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
 ## 外部依赖
 
-* 本 demo UI 依赖 Qt5 框架，请自行到 Qt5 分发站下载。
+* 本 demo UI 依赖 Qt5或Qt6 框架，请自行到 Qt 分发站下载。
   
  > [下载](http://download.qt.io/)
   
@@ -39,8 +39,12 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
 * plv-player-sdk 文件夹：包含 SDK 头文件以及 lib、dll、dylib 文件，使用 PlvPlayerSDK.cmake 拉取。
   * mac
-    * include
-    * lib
+    * x86_64
+      * include
+      * lib
+    * arm64
+      * include
+      * lib
   * windows
     * x86
       * include
@@ -68,7 +72,7 @@ git clone https://github.com/polyv/polyv-player-sdk-demo.git
 
  > ![cmake_build.png](https://help.polyv.net/img/vod/pc_player/CMAKE.png)
 
-* 设置 QTDIR，指定 Qt5 路径。（如：C:\Qt\Qt5.15.2\5.15.2\msvc2019）
+* 设置 QTDIR，指定 Qt 路径。（如：C:\Qt\Qt5.15.2\5.15.2\msvc2019）
   
  > ![QTDIR.png](https://help.polyv.net/img/vod/pc_player/QTDIR.png)
 

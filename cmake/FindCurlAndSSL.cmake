@@ -28,25 +28,30 @@ if (MSVC)
         CACHE PATH "libcurl libraries"
         )
 elseif (APPLE)
+    if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+        set(ARCH_PATH "arm64-osx")
+    else()
+        set(ARCH_PATH "x64-osx")
+    endif()
     set(CRYPTO_LIBS
-        ${THIRD_PARTY_PATH}/x64-osx/lib/libcrypto.a
-        ${THIRD_PARTY_PATH}/x64-osx/lib/libssl.a
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/lib/libcrypto.a
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/lib/libssl.a
         CACHE PATH "openssl libraries"
         )
     set(CRYPTO_INCLUDE_DIRS
-        ${THIRD_PARTY_PATH}/x64-osx/include
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/include
         CACHE PATH "openssl include directories"
         )
     set(CLIENT_LIBS
-        ${THIRD_PARTY_PATH}/x64-osx/lib/libcurl.a
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/lib/libcurl.a
         CACHE PATH "libcurl libraries"
         )
     set(CLIENT_INCLUDE_DIRS
-        ${THIRD_PARTY_PATH}/x64-osx/include
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/include
         CACHE PATH "libcurl include directories"
         )
     set(ZLIB_LIBS
-        ${THIRD_PARTY_PATH}/x64-osx/lib/libz.a
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/lib/libz.a
         CACHE PATH "libcurl libraries"
         )
 endif()

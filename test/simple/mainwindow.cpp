@@ -479,7 +479,13 @@ void MainWindow::on_shotScreenPushButton_clicked()
 
 void MainWindow::on_fullScreenPushButton_clicked()
 {
-    playWnd->SwitchFullScreen();
+    if (isFullScreen()) {
+        // only one fullscreen window on a space (mac)
+	    showNormal();
+	    QTimer::singleShot(500, this, [this]() { playWnd->SwitchFullScreen(); });
+    } else {
+	    playWnd->SwitchFullScreen();
+    }
 }
 
 void MainWindow::on_speedComboBox_currentIndexChanged(int index)
@@ -676,8 +682,7 @@ void MainWindow::OnAddDownloader(QVariantMap video, QVariantMap rateInfo)
 {
     //check path
     QString path = ui->localVideoPathLineEdit->text();
-    QDir dir(path);
-    if (path.isEmpty() || (!dir.exists() && !dir.mkdir("."))) {
+    if (path.isEmpty() || !QDir().mkpath(path)) {
         QMessageBox::information(this, "Tips", QTStr("VideoSavePathError"));
         return;
     }
@@ -1078,7 +1083,9 @@ void MainWindow::EnableControl(bool initialized)
 void MainWindow::LoadConfig()
 {
     QSettings settings(GetConfigPath(), QSettings::IniFormat);
+#if QT_VERSION_MAJOR < 6
     settings.setIniCodec("utf-8");
+#endif
     //global config
     int logLevel = settings.value("logLevel", (int)LOG_FILTER_INFO).toInt();
     ui->logLevelComboBox->setCurrentIndex(logLevel);
@@ -1218,7 +1225,9 @@ void MainWindow::LoadConfig()
 void MainWindow::SaveConfig()
 {
     QSettings settings(GetConfigPath(), QSettings::IniFormat);
+#if QT_VERSION_MAJOR < 6
     settings.setIniCodec("utf-8");
+#endif
     //global
     int logLevel = ui->logLevelComboBox->currentIndex();
     settings.setValue("logLevel", logLevel);
@@ -1643,7 +1652,13 @@ void MainWindow::on_liveShotScreenPushButton_clicked()
 
 void MainWindow::on_liveFullScreenPushButton_clicked()
 {
-    livePlayWnd->SwitchFullScreen();
+    if (isFullScreen()) {
+	    // only one fullscreen window on a space (mac)
+	    showNormal();
+	    QTimer::singleShot(500, this, [this]() { livePlayWnd->SwitchFullScreen(); });
+    } else {
+	    livePlayWnd->SwitchFullScreen();
+    }
 }
 
 void MainWindow::on_liveMuteCheckBox_clicked(bool checked)

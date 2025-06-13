@@ -15,12 +15,17 @@ if (MSVC)
         CACHE PATH "sqlite3 include directories"
     )
 elseif (APPLE)
+    if(CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+        set(ARCH_PATH "arm64-osx")
+    else()
+        set(ARCH_PATH "x64-osx")
+    endif()
     set(SQLITE3_LIBS
-        ${THIRD_PARTY_PATH}/x64-osx/lib/libsqlite3.a
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/lib/libsqlite3.a
         CACHE PATH "sqlite3 libraries"
         )
     set(SQLITE3_INCLUDE_DIRS
-        ${THIRD_PARTY_PATH}/x64-osx/include
+        ${THIRD_PARTY_PATH}/${ARCH_PATH}/include
         CACHE PATH "sqlite3 include directories"
         )
 endif()
