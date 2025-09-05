@@ -72,6 +72,8 @@ private slots:
     void on_hardwareDecodeCheckBox_clicked(bool);
     void on_keepLastFrameCheckBox_clicked(bool);
     void on_videoOutputComboBox_currentIndexChanged(int);
+    void on_seekCacheEnableCheckBox_clicked(bool);
+    void on_debugButton_clicked();
     void on_logoEnableCheckBox_clicked();
     void on_osdEnableCheckBox_clicked();
     void on_playRateComboBox_activated(int);

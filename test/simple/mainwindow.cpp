@@ -531,6 +531,17 @@ void MainWindow::on_videoOutputComboBox_currentIndexChanged(int index)
 #endif
 }
 
+void MainWindow::on_seekCacheEnableCheckBox_clicked(bool enable) 
+{
+	PLVPlayerSetSeekCacheEnable(player, enable);
+}
+
+void MainWindow::on_debugButton_clicked() 
+{
+	QString jsonStr = ui->debugLineEdit->text();
+	PLVPlayerExperimentalAPI(player, QT_TO_UTF8(jsonStr));
+}
+
 void MainWindow::on_logoEnableCheckBox_clicked()
 {
     if (!player) { return; }
@@ -656,7 +667,7 @@ void MainWindow::OnMediaProcess(QString vid, int ms)
 void MainWindow::OnSeek(qint64 ms)
 {
     if (IsPlaying()) {
-        PLVPlayerSetSeek(player, ms);
+		PLVPlayerSetSeek(player, ms);
     }
 }
 
@@ -1127,6 +1138,8 @@ void MainWindow::LoadConfig()
     ui->keepLastFrameCheckBox->setChecked(keepLastFrame);
     int videoOutput = settings.value("videoOutput", 0).toInt();
     ui->videoOutputComboBox->setCurrentIndex(videoOutput);
+    bool seekCacheEnable = settings.value("seekCacheEnable", true).toBool();
+    ui->seekCacheEnableCheckBox->setChecked(seekCacheEnable);
     //logo
     bool logoEnable = settings.value("logoEnable", false).toBool();
     ui->logoEnableCheckBox->setChecked(logoEnable);
@@ -1268,6 +1281,8 @@ void MainWindow::SaveConfig()
     settings.setValue("keepLastFrame", keepLastFrame);
     int videoOutput = ui->videoOutputComboBox->currentIndex();
     settings.setValue("videoOutput", videoOutput);
+    bool seekCacheEnable = ui->seekCacheEnableCheckBox->isChecked();
+    settings.setValue("seekCacheEnable", seekCacheEnable);
     //logo
     bool logoEnable = ui->logoEnableCheckBox->isChecked();
     settings.setValue("logoEnable", logoEnable);
@@ -1428,6 +1443,7 @@ void MainWindow::InitPlayer()
     on_hardwareDecodeCheckBox_clicked(ui->hardwareDecodeCheckBox->isChecked());
     on_keepLastFrameCheckBox_clicked(ui->keepLastFrameCheckBox->isChecked());
     on_videoOutputComboBox_currentIndexChanged(ui->videoOutputComboBox->currentIndex());
+    on_seekCacheEnableCheckBox_clicked(ui->seekCacheEnableCheckBox->isChecked());
     on_logoEnableCheckBox_clicked();
     on_osdEnableCheckBox_clicked();
 }

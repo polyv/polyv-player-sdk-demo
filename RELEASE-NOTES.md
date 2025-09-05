@@ -2,6 +2,11 @@
 
 SDK 的版本变更说明
 
+## Version 2.8.1
+变更与修复
+1. Electron下硬件防录制功能不再默认启用，需要调用接口打开
+2. 点播新增PLVPlayerSetSeekCacheEnable接口，用于控制是否基于缓存进行seek
+
 ## Version 2.8.0
 新特性
 1. 支持MAC原生ARM64架构SDK
