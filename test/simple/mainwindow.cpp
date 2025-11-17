@@ -689,7 +689,7 @@ void MainWindow::on_localVideoBrowserPushButton_clicked()
     }
 }
 
-void MainWindow::OnAddDownloader(QVariantMap video, QVariantMap rateInfo)
+void MainWindow::OnAddDownloader(QVariantMap video, QVariantMap rateInfo, qint64 speedLimit)
 {
     //check path
     QString path = ui->localVideoPathLineEdit->text();
@@ -746,6 +746,7 @@ void MainWindow::OnAddDownloader(QVariantMap video, QVariantMap rateInfo)
                 Q_ARG(int, rate),
                 Q_ARG(int, code));
         }, downloader);
+    PLVDownloadSetSpeedLimit(downloader, speedLimit);
     PLVDownloadSetInfo(downloader, QT_TO_UTF8(vid), QT_TO_UTF8(path), rate);
     PLVDownloadStart(downloader, QT_TO_UTF8(token), false);
     //add item
@@ -1030,13 +1031,19 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event)
             auto downloadRatesMenu = menu.addMenu(QTStr("Download"));
             for (auto& item : video.value("rates").toList()) {
                 int rate = item.toMap().value("rate").toInt();
-                auto rateAction = downloadRatesMenu->addAction(GetRateName(rate));
                 QVariantMap downVideo = video;
                 QVariantMap rateInfo = item.toMap();
-                connect(rateAction, &QAction::triggered, this,
-                    [this, downVideo, rateInfo]() {
-                        OnAddDownloader(downVideo, rateInfo);
-                    });
+		        QString rateName = GetRateName(rate);
+                // normal speed
+			    auto action =
+				    downloadRatesMenu->addAction(rateName + QString(" %1").arg(QTStr("NoSpeedLimit")));
+			    connect(action, &QAction::triggered, this,
+				    [this, downVideo, rateInfo]() { OnAddDownloader(downVideo, rateInfo, 0); });
+			    // limit speed
+			    action =
+				    downloadRatesMenu->addAction(rateName + QString(" %1").arg(QTStr("SpeedLimit")));
+			    connect(action, &QAction::triggered, this,
+				    [this, downVideo, rateInfo]() { OnAddDownloader(downVideo, rateInfo, 512); });
             }
             menu.exec(contextMenuEvt->globalPos());
         }

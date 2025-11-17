@@ -85,7 +85,7 @@ private slots:
     void on_shrinkOrExpandPushButton_clicked();
     //download
     void on_localVideoBrowserPushButton_clicked();
-    void OnAddDownloader(QVariantMap video, QVariantMap rateInfo);
+    void OnAddDownloader(QVariantMap video, QVariantMap rateInfo, qint64 speedLimit);
     void OnDownloaderProgress(qint64 downloader, QString vid, qint64 current, qint64 total);
     void OnDownloaderComplete(qint64 downloader, QString vid, int rate, int code);
     void on_localVideoPathLineEdit_textChanged(const QString& text);
