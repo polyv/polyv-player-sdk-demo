@@ -30,6 +30,13 @@ LONG WINAPI ApplicationCrashHandler(struct _EXCEPTION_POINTERS* lpExceptionInfo)
 
 int main(int argc, char *argv[])
 {
+    // 高 DPI 支持设置
+    QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+#endif
+
     QApplication a(argc, argv);
 #ifdef _WIN32
     SetUnhandledExceptionFilter(ApplicationCrashHandler);
