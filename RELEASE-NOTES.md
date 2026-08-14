@@ -2,6 +2,14 @@
 
 SDK 的版本变更说明
 
+## Version 2.11.0
+新特性
+1. 新增接口PLVSetVrmPrivateOsd, 可关闭VRM12/13默认水印, 仅支持原生使用
+
+变更与修复
+1. PLVPlayerPlay接口参数变更, 去掉过时参数, seekMillisecond参数含义改为：默认 -1：优先从云端或本地记忆进度续播，无记忆则从头播放；≥0：从指定进度开始播放.
+2. PLVPlayerPlayLocal、PLVPlayerLoadLocal接口seekMillisecond参数含义同样修改
+
 ## Version 2.10.0
 新特性
 1. 支持点播字幕功能

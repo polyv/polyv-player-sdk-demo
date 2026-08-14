@@ -115,7 +115,7 @@ private:
 	//play
 	void InitPlayer();
 	void FreePlayer();
-	void PlayOnline(QString vid, bool encrypt, int rate);
+	void PlayOnline(QString vid, bool encrypt, int rate, int seek);
 	void PlayOffline(QString videoPath, QString vid, int rate);
 	bool IsPlaying();
 	//download

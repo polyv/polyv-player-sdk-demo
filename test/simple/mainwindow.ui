@@ -730,6 +730,9 @@
                 </item>
                </widget>
               </item>
+              <item>
+               <widget class="QComboBox" name="playSeekComboBox"/>
+              </item>
              </layout>
             </widget>
            </item>

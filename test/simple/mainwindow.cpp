@@ -60,6 +60,10 @@ MainWindow::MainWindow(QWidget *parent)
 		ui->appIdLineEdit->setEnabled(subAccount);
 		ui->appSecretLineEdit->setEnabled(subAccount);
 	});
+	ui->playSeekComboBox->addItem(QTStr("SeekByMemory"), -1);
+	ui->playSeekComboBox->addItem(QTStr("SeekBy0"), 0);
+	ui->playSeekComboBox->addItem(QTStr("SeekBy5000"), 5000);
+	ui->playSeekComboBox->setCurrentIndex(0);
 	EnableControl(false);
 	LoadConfig();
 	//tips
@@ -412,6 +416,7 @@ void MainWindow::on_playPushButton_clicked()
 	bool autoDownRate = ui->autoDownRateCheckBox->isChecked();
 	inputRate = ui->playRateComboBox->currentIndex();
 	currentRate = inputRate;
+	int seek = ui->playSeekComboBox->currentData().toInt();
 	QString videoPath = ui->videoPathLineEdit->text();
 	//check
 	if (IsPlaying()) {
@@ -443,9 +448,9 @@ void MainWindow::on_playPushButton_clicked()
 	playerVid = vid;
 	PLVPlayerSetInfo(player, QT_TO_UTF8(vid), QT_TO_UTF8(videoPath), inputRate);
 	if (onlinePlay) {
-		PLVPlayerPlay(player, useToken ? QT_TO_UTF8(token) : nullptr, 0, autoDownRate, false, false);
+		PLVPlayerPlay(player, useToken ? QT_TO_UTF8(token) : nullptr, seek, autoDownRate);
 	} else {
-		PLVPlayerPlayLocal(player, 0, autoDownRate);
+		PLVPlayerPlayLocal(player, seek, autoDownRate);
 	}
 }
 
@@ -1200,7 +1205,7 @@ void MainWindow::on_customPlayPushButton_clicked()
 		},
 		this);
 	PLVPlayerSetInfo(customPlayer, QT_TO_UTF8(vid), nullptr, rate);
-	PLVPlayerPlay(customPlayer, useToken ? QT_TO_UTF8(token) : nullptr, 0, true, false, false);
+	PLVPlayerPlay(customPlayer, useToken ? QT_TO_UTF8(token) : nullptr, -1, true);
 }
 
 void MainWindow::on_customStopPushButton_clicked()
@@ -1250,17 +1255,23 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 			auto video = ui->videoTableWidget->item(item->row(), 0)->data(Qt::UserRole).toMap();
 			auto contextMenuEvt = static_cast<QContextMenuEvent *>(event);
 			QMenu menu(this);
-			auto playAction = menu.addAction(QTStr("Play"));
-			connect(playAction, &QAction::triggered, this, [this, video]() {
-				PlayOnline(video.value("vid").toString(), video.value("encrypt").toBool(), 0);
-			});
+			auto playWithSeekMenu = menu.addMenu(QTStr("Play"));
+			QList<QPair<QString, int>> seeks{
+				{QTStr("SeekByMemory"), -1}, {QTStr("SeekBy0"), 0}, {QTStr("SeekBy5000"), 5000}};
+			for (const auto &seek : seeks) {
+				auto action = playWithSeekMenu->addAction(seek.first);
+				connect(action, &QAction::triggered, this, [this, video, seek] {
+					PlayOnline(video.value("vid").toString(), video.value("encrypt").toBool(), 0,
+						   seek.second);
+				});
+			}
 			auto playWithRateMenu = menu.addMenu(QTStr("PlayWithRate"));
 			for (auto &item : video.value("rates").toList()) {
 				int rate = item.toMap().value("rate").toInt();
 				auto rateAction = playWithRateMenu->addAction(GetRateName(rate));
 				connect(rateAction, &QAction::triggered, this, [this, video, rate]() {
-					PlayOnline(video.value("vid").toString(), video.value("encrypt").toBool(),
-						   rate);
+					PlayOnline(video.value("vid").toString(), video.value("encrypt").toBool(), rate,
+						   -1);
 				});
 			}
 #ifdef _WIN32
@@ -1744,7 +1755,7 @@ void MainWindow::FreePlayer()
 	}
 }
 
-void MainWindow::PlayOnline(QString vid, bool encrypt, int rate)
+void MainWindow::PlayOnline(QString vid, bool encrypt, int rate, int seek)
 {
 	ui->playModeComboBox->setCurrentIndex(0);
 	//encrypt need request token!
@@ -1755,6 +1766,7 @@ void MainWindow::PlayOnline(QString vid, bool encrypt, int rate)
 	ui->tabWidget->setCurrentIndex(TabVideoPlay);
 	ui->playVidLineEdit->setText(vid);
 	ui->playRateComboBox->setCurrentIndex(rate);
+	ui->playSeekComboBox->setCurrentIndex(ui->playSeekComboBox->findData(seek));
 	if (!IsPlaying() || !onlinePlay || playerVid != vid || inputRate != rate) {
 		on_stopPushButton_clicked();
 		on_playPushButton_clicked();
@@ -1768,6 +1780,7 @@ void MainWindow::PlayOffline(QString videoPath, QString vid, int rate)
 	ui->tabWidget->setCurrentIndex(TabVideoPlay);
 	ui->playVidLineEdit->setText(vid);
 	ui->playRateComboBox->setCurrentIndex(rate);
+	ui->playSeekComboBox->setCurrentIndex(0);
 	if (!IsPlaying() || onlinePlay || playerVid != vid || inputRate != rate) {
 		on_stopPushButton_clicked();
 		on_playPushButton_clicked();
